@@ -1,0 +1,33 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3498db;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2980b9;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景圆 -->
+  <circle cx="64" cy="64" r="60" fill="url(#grad1)"/>
+  
+  <!-- Git分支图标 -->
+  <g fill="#ffffff" stroke="#ffffff" stroke-width="2">
+    <!-- 主分支线 -->
+    <line x1="40" y1="30" x2="40" y2="98" stroke-width="4" stroke-linecap="round"/>
+    
+    <!-- 分支线 -->
+    <path d="M 40 50 Q 55 50 70 65" fill="none" stroke-width="4" stroke-linecap="round"/>
+    <line x1="70" y1="65" x2="70" y2="98" stroke-width="4" stroke-linecap="round"/>
+    
+    <!-- 提交节点 -->
+    <circle cx="40" cy="30" r="8" fill="#ffffff"/>
+    <circle cx="40" cy="60" r="8" fill="#ffffff"/>
+    <circle cx="40" cy="90" r="8" fill="#ffffff"/>
+    <circle cx="70" cy="70" r="8" fill="#ffffff"/>
+    <circle cx="70" cy="90" r="8" fill="#ffffff"/>
+    
+    <!-- 加号装饰 -->
+    <line x1="95" y1="30" x2="105" y2="30" stroke-width="3" stroke-linecap="round"/>
+    <line x1="100" y1="25" x2="100" y2="35" stroke-width="3" stroke-linecap="round"/>
+  </g>
+</svg>
+

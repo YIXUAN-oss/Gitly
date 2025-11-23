@@ -1,0 +1,190 @@
+# ⚡ Git Assistant 快速参考
+
+## 🚀 立即开始（3步）
+
+```bash
+# 1. 启动监听
+cd E:\CodeGitAssistant
+npm run watch
+
+# 2. 在 VS Code 中打开项目
+# 3. 按 F5 开始调试
+```
+
+> 💡 **新项目/空文件夹**：在 VS Code 中按 `Ctrl+Shift+P`，执行 `Git Assistant: 初始化仓库`，即可完成 `git init → git remote add → git add . → git commit → git push` 的全流程。
+
+---
+
+## 📋 快捷键
+
+| 快捷键 | 功能 |
+|--------|------|
+| `F5` | 启动调试 |
+| `Ctrl+R` | 重新加载扩展 |
+| `Ctrl+Shift+P` | 命令面板 |
+| `Ctrl+Alt+P` | 快速推送 |
+| `Ctrl+Alt+L` | 快速拉取 |
+| `Ctrl+Alt+B` | 切换分支 |
+| `Ctrl+Shift+U` | 查看日志 |
+
+---
+
+## 🧭 插件命令速查
+
+| 命令 | 描述 |
+|------|------|
+| Git Assistant: 初始化仓库 | 在当前文件夹执行 `git init` |
+| Git Assistant: 添加远程仓库 | 输入地址并执行 `git remote add` |
+| Git Assistant: 初始提交 | `git add .`、`git commit`、可选推送 |
+| Git Assistant: 快速推送 | `git push`，带确认与进度 |
+| Git Assistant: 快速拉取 | `git pull`，可选自动 stash |
+| Git Assistant: 克隆仓库 | 引导选择目标目录并拉取代码 |
+| Git Assistant: 创建/切换/合并分支 | 分支管理命令 |
+| Git Assistant: 解决冲突 | 打开冲突解决器 |
+| Git Assistant: 打开控制面板 | 查看统计与操作按钮 |
+
+## 📊 可视化功能速查
+
+| 标签页 | 功能 | 技术 |
+|--------|------|------|
+| 📊 提交图谱 | 2D图形化提交历史，类似GitKraken | D3.js力导向图 |
+| 🎯 3D提交图谱 | 三维交互式提交视图，支持旋转缩放 | Three.js + WebGL |
+| 🔥 热力图 | 文件修改频率和贡献者活跃度分析 | D3.js热力图 |
+| 🌳 分支依赖 | 分支合并路径与依赖关系可视化 | D3.js图形布局 |
+| 📅 时间线 | 提交时间线日历视图 | D3.js时间轴 + 日历 |
+| 🌿 分支管理 | 分支树和操作界面 | React组件 |
+| ⚠️ 冲突解决 | 冲突检测和解决工具 | React组件 |
+| 📋 快捷指令 | 命令历史记录和快速执行 | React组件 |
+
+---
+
+## 📂 项目结构
+
+```
+src/
+├── extension.ts         # 入口
+├── commands/           # 命令
+├── services/           # 服务
+├── providers/          # 提供者
+├── webview/            # UI
+├── utils/              # 工具
+└── types/              # 类型
+```
+
+---
+
+## 🛠️ 常用命令
+
+```bash
+# 开发
+npm run watch          # 监听模式
+npm run compile        # 编译
+npm run lint           # 检查
+
+# 调试
+F5                     # 启动
+Ctrl+R                 # 重载
+Ctrl+Shift+U          # 日志
+
+# 打包
+npm install -g @vscode/vsce
+vsce package          # 生成 .vsix
+```
+
+---
+
+## 📝 文档导航
+
+| 文档 | 用途 |
+|------|------|
+| [`README.md`](README.md) | 项目介绍（英文） |
+| [`README_CN.md`](README_CN.md) | 功能与特性详细说明（中文） |
+| [`GETTING_STARTED.md`](GETTING_STARTED.md) | 使用和调试指南 |
+| [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md) | 架构概览和功能矩阵 |
+| [`CHANGELOG.md`](CHANGELOG.md) | 版本更新日志 |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | 开发流程与规范 |
+| [`docs/QUICKSTART.md`](docs/QUICKSTART.md) | 5分钟入门 |
+| [`docs/TESTING.md`](docs/TESTING.md) | 测试与验证清单 |
+
+---
+
+## ✅ 验证清单
+
+```
+✅ npm install 成功
+✅ npm run compile 成功
+✅ 生成 dist/extension.js
+✅ 生成 dist/webview/webview.js
+✅ 按 F5 启动成功
+✅ Extension Host 窗口打开
+```
+
+---
+
+## 🐛 问题排查
+
+### 扩展未激活
+```bash
+# 确保在 Git 仓库中
+git init
+```
+
+### 修改未生效
+```
+1. 确保 npm run watch 在运行
+2. 在 Extension Host 中按 Ctrl+R
+```
+
+### 查看日志
+```
+Ctrl+Shift+U → 选择 "Git Assistant"
+```
+
+---
+
+## 📞 获取帮助
+
+1. 查看 [`GETTING_STARTED.md`](GETTING_STARTED.md)
+2. 查看输出日志
+3. 查看开发者工具
+
+---
+
+## 🎨 可视化功能说明
+
+### 2D提交图谱
+- 使用D3.js力导向图算法
+- 节点表示提交，连线表示分支关系
+- 支持拖拽和缩放
+- 点击节点查看提交详情
+
+### 3D提交图谱
+- 使用Three.js渲染3D场景
+- 鼠标拖拽旋转视角
+- 滚轮缩放
+- 3D球体表示提交节点
+
+### 热力图分析
+- **文件热力图**：统计文件修改次数，颜色深浅表示频率
+- **贡献者热力图**：统计贡献者提交数，识别核心贡献者
+
+### 分支依赖图
+- 展示分支之间的合并关系
+- 箭头表示合并方向
+- 高亮显示当前分支
+
+### 时间线视图
+- **日历热力图**：按日期显示提交频率
+- **时间线图表**：折线图展示提交趋势
+- 支持年月切换
+
+### 快捷指令历史
+- 记录所有已执行的Git命令
+- 按功能分类显示
+- 支持快速重新执行
+- 显示执行状态和错误信息
+
+---
+
+**项目状态：✅ 就绪** | **最后更新：2024-01-01**
+

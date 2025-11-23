@@ -1,0 +1,393 @@
+import React, { useState, useEffect } from 'react';
+
+interface CommandHistoryItem {
+    id: string;
+    command: string;
+    commandName: string;
+    timestamp: number;
+    success: boolean;
+    error?: string;
+}
+
+interface Command {
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+    category: string;
+    requires: string;
+}
+
+interface Category {
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+}
+
+/**
+ * 命令历史组件 - 显示已执行的快捷指令（分类显示）
+ */
+export const CommandHistory: React.FC<{ data: any }> = ({ data }) => {
+    const [history, setHistory] = useState<CommandHistoryItem[]>([]);
+    const [availableCommands, setAvailableCommands] = useState<Command[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['init', 'tools']));
+    const [repositoryState, setRepositoryState] = useState<{
+        isRepository: boolean;
+        hasCommits: boolean;
+        hasConflicts: boolean;
+    }>({
+        isRepository: false,
+        hasCommits: false,
+        hasConflicts: false
+    });
+
+    useEffect(() => {
+        if (data?.commandHistory) {
+            setHistory(data.commandHistory);
+        }
+        if (data?.availableCommands) {
+            setAvailableCommands(data.availableCommands);
+        }
+        if (data?.categories) {
+            setCategories(data.categories);
+        }
+
+        // 判断仓库状态
+        const isRepo = data?.status !== undefined;
+        const hasCommits = data?.log?.all?.length > 0;
+        const hasConflicts = data?.status?.conflicted?.length > 0;
+
+        setRepositoryState({
+            isRepository: isRepo,
+            hasCommits,
+            hasConflicts
+        });
+    }, [data]);
+
+    const formatTime = (timestamp: number) => {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diff = now.getTime() - date.getTime();
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+
+        if (minutes < 1) return '刚刚';
+        if (minutes < 60) return `${minutes}分钟前`;
+        if (hours < 24) return `${hours}小时前`;
+        if (days < 7) return `${days}天前`;
+        return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    };
+
+    const executeCommand = (commandId: string) => {
+        vscode.postMessage({ command: 'executeCommand', commandId });
+    };
+
+    const toggleCategory = (categoryId: string) => {
+        const newExpanded = new Set(expandedCategories);
+        if (newExpanded.has(categoryId)) {
+            newExpanded.delete(categoryId);
+        } else {
+            newExpanded.add(categoryId);
+        }
+        setExpandedCategories(newExpanded);
+    };
+
+    // 判断命令是否可用
+    const isCommandAvailable = (command: Command): boolean => {
+        const { requires } = command;
+        const { isRepository, hasCommits, hasConflicts } = repositoryState;
+
+        switch (requires) {
+            case 'none':
+                return true;
+            case 'repository':
+                return isRepository;
+            case 'commits':
+                return isRepository && hasCommits;
+            case 'conflicts':
+                return isRepository && hasConflicts;
+            default:
+                return true;
+        }
+    };
+
+    // 获取分类的命令
+    const getCommandsByCategory = (categoryId: string): Command[] => {
+        return availableCommands.filter(cmd => cmd.category === categoryId);
+    };
+
+    // 判断分类是否应该显示
+    const shouldShowCategory = (categoryId: string): boolean => {
+        const commands = getCommandsByCategory(categoryId);
+        // 如果分类中有任何可用命令，就显示该分类
+        return commands.some(cmd => isCommandAvailable(cmd));
+    };
+
+    // 获取分类的可用命令数量
+    const getAvailableCommandCount = (categoryId: string): number => {
+        return getCommandsByCategory(categoryId).filter(cmd => isCommandAvailable(cmd)).length;
+    };
+
+    return (
+        <div className="command-history">
+            <div className="section-header">
+                <h2>快捷指令</h2>
+                <p className="section-description">
+                    根据仓库状态分类显示可用命令和执行历史
+                </p>
+            </div>
+
+            {/* 仓库状态提示 */}
+            <div style={{
+                padding: '12px 16px',
+                marginBottom: '20px',
+                background: repositoryState.isRepository
+                    ? 'var(--vscode-textBlockQuote-background)'
+                    : 'var(--vscode-inputValidation-warningBackground)',
+                border: `1px solid ${repositoryState.isRepository ? 'var(--vscode-textLink-foreground)' : 'var(--vscode-inputValidation-warningBorder)'}`,
+                borderRadius: '6px',
+                fontSize: '13px'
+            }}>
+                <strong>📌 当前状态：</strong>
+                {!repositoryState.isRepository && '未初始化 Git 仓库'}
+                {repositoryState.isRepository && !repositoryState.hasCommits && '已初始化，但还没有提交'}
+                {repositoryState.isRepository && repositoryState.hasCommits && '正常使用中'}
+                {repositoryState.hasConflicts && ' ⚠️ 存在合并冲突'}
+            </div>
+
+            {/* 分类命令列表 */}
+            <div style={{ marginBottom: '30px' }}>
+                <h3 style={{ marginBottom: '15px', fontSize: '16px', color: 'var(--vscode-textLink-foreground)' }}>
+                    📋 可用命令
+                </h3>
+
+                {categories.map((category) => {
+                    if (!shouldShowCategory(category.id)) {
+                        return null;
+                    }
+
+                    const commands = getCommandsByCategory(category.id);
+                    const availableCommandsInCategory = commands.filter(cmd => isCommandAvailable(cmd));
+                    const isExpanded = expandedCategories.has(category.id);
+
+                    if (availableCommandsInCategory.length === 0) {
+                        return null;
+                    }
+
+                    return (
+                        <div
+                            key={category.id}
+                            style={{
+                                marginBottom: '15px',
+                                border: '1px solid var(--vscode-panel-border)',
+                                borderRadius: '8px',
+                                overflow: 'hidden',
+                                background: 'var(--vscode-sideBar-background)'
+                            }}
+                        >
+                            {/* 分类标题（可点击折叠） */}
+                            <div
+                                onClick={() => toggleCategory(category.id)}
+                                style={{
+                                    padding: '12px 16px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    background: 'var(--vscode-list-hoverBackground)',
+                                    transition: 'background 0.2s'
+                                }}
+                                onMouseEnter={(e) => {
+                                    (e.currentTarget as any).style.background = 'var(--vscode-list-activeSelectionBackground)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    (e.currentTarget as any).style.background = 'var(--vscode-list-hoverBackground)';
+                                }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <span style={{ fontSize: '18px' }}>{category.icon}</span>
+                                    <div>
+                                        <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                                            {category.name}
+                                        </div>
+                                        <div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>
+                                            {category.description} ({availableCommandsInCategory.length} 个可用)
+                                        </div>
+                                    </div>
+                                </div>
+                                <span style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>
+                                    {isExpanded ? '▼' : '▶'}
+                                </span>
+                            </div>
+
+                            {/* 分类内容（可折叠） */}
+                            {isExpanded && (
+                                <div style={{
+                                    padding: '15px',
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                                    gap: '12px'
+                                }}>
+                                    {commands.map((cmd) => {
+                                        const isAvailable = isCommandAvailable(cmd);
+                                        return (
+                                            <div
+                                                key={cmd.id}
+                                                onClick={() => isAvailable && executeCommand(cmd.id)}
+                                                style={{
+                                                    padding: '12px 16px',
+                                                    background: isAvailable
+                                                        ? 'var(--vscode-button-secondaryBackground)'
+                                                        : 'var(--vscode-list-inactiveSelectionBackground)',
+                                                    border: `1px solid ${isAvailable ? 'var(--vscode-panel-border)' : 'var(--vscode-panel-border)'}`,
+                                                    borderRadius: '6px',
+                                                    cursor: isAvailable ? 'pointer' : 'not-allowed',
+                                                    transition: 'all 0.2s',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '10px',
+                                                    opacity: isAvailable ? 1 : 0.6
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    if (isAvailable) {
+                                                        (e.currentTarget as any).style.background = 'var(--vscode-button-secondaryHoverBackground)';
+                                                        (e.currentTarget as any).style.borderColor = 'var(--vscode-focusBorder)';
+                                                    }
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    if (isAvailable) {
+                                                        (e.currentTarget as any).style.background = 'var(--vscode-button-secondaryBackground)';
+                                                        (e.currentTarget as any).style.borderColor = 'var(--vscode-panel-border)';
+                                                    }
+                                                }}
+                                                title={!isAvailable ? '当前状态不可用此命令' : cmd.description}
+                                            >
+                                                <span style={{ fontSize: '20px' }}>{cmd.icon}</span>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
+                                                        {cmd.name}
+                                                        {!isAvailable && <span style={{ fontSize: '10px', marginLeft: '5px', color: 'var(--vscode-descriptionForeground)' }}>(不可用)</span>}
+                                                    </div>
+                                                    <div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>
+                                                        {cmd.description}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* 执行历史 */}
+            <div>
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '15px'
+                }}>
+                    <h3 style={{ fontSize: '16px', color: 'var(--vscode-textLink-foreground)', margin: 0 }}>
+                        📜 执行历史
+                    </h3>
+                    <button
+                        onClick={() => vscode.postMessage({ command: 'clearHistory' })}
+                        style={{
+                            padding: '6px 12px',
+                            background: 'var(--vscode-button-secondaryBackground)',
+                            color: 'var(--vscode-button-secondaryForeground)',
+                            border: '1px solid var(--vscode-panel-border)',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                        }}
+                    >
+                        清空历史
+                    </button>
+                </div>
+
+                {history.length === 0 ? (
+                    <div style={{
+                        textAlign: 'center',
+                        padding: '40px',
+                        color: 'var(--vscode-descriptionForeground)'
+                    }}>
+                        <p>📝 暂无执行历史</p>
+                        <p style={{ fontSize: '12px', marginTop: '10px' }}>
+                            点击上方的命令卡片来执行操作
+                        </p>
+                    </div>
+                ) : (
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        maxHeight: '400px',
+                        overflowY: 'auto'
+                    }}>
+                        {history.map((item) => (
+                            <div
+                                key={item.id}
+                                style={{
+                                    padding: '12px 16px',
+                                    background: item.success
+                                        ? 'var(--vscode-list-hoverBackground)'
+                                        : 'var(--vscode-inputValidation-errorBackground)',
+                                    border: `1px solid ${item.success ? 'var(--vscode-panel-border)' : 'var(--vscode-inputValidation-errorBorder)'}`,
+                                    borderRadius: '6px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px'
+                                }}
+                            >
+                                <span style={{ fontSize: '18px' }}>
+                                    {item.success ? '✅' : '❌'}
+                                </span>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{
+                                        fontWeight: 'bold',
+                                        fontSize: '14px',
+                                        marginBottom: '4px',
+                                        color: item.success ? 'var(--vscode-foreground)' : 'var(--vscode-errorForeground)'
+                                    }}>
+                                        {item.commandName}
+                                    </div>
+                                    <div style={{
+                                        fontSize: '11px',
+                                        color: 'var(--vscode-descriptionForeground)',
+                                        fontFamily: 'monospace',
+                                        marginBottom: item.error ? '4px' : '0'
+                                    }}>
+                                        {item.command}
+                                    </div>
+                                    {item.error && (
+                                        <div style={{
+                                            fontSize: '11px',
+                                            color: 'var(--vscode-errorForeground)',
+                                            marginTop: '4px'
+                                        }}>
+                                            错误: {item.error}
+                                        </div>
+                                    )}
+                                </div>
+                                <div style={{
+                                    fontSize: '11px',
+                                    color: 'var(--vscode-descriptionForeground)',
+                                    whiteSpace: 'nowrap'
+                                }}>
+                                    {formatTime(item.timestamp)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
