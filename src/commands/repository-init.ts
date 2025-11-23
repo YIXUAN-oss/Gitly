@@ -1,6 +1,4 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
 import { GitService } from '../services/git-service';
 import { BranchProvider } from '../providers/branch-provider';
 import { HistoryProvider } from '../providers/history-provider';
@@ -99,45 +97,8 @@ export function registerRepositoryInit(
 
                 vscode.window.showInformationMessage('✅ Git仓库初始化成功！');
 
-                // 检查是否有文件可提交
-                try {
-                    const status = await gitService.getStatus();
-                    const hasFiles = status.modified.length > 0 ||
-                        status.created.length > 0 ||
-                        status.not_added.length > 0;
-
-                    if (!hasFiles) {
-                        const createFile = await vscode.window.showWarningMessage(
-                            '当前文件夹为空，没有文件可提交。是否创建 README.md 文件？',
-                            '创建',
-                            '稍后'
-                        );
-
-                        if (createFile === '创建') {
-                            const workspaceRoot = gitService.getWorkspaceRoot();
-                            if (workspaceRoot) {
-                                const readmePath = path.join(workspaceRoot, 'README.md');
-                                if (!fs.existsSync(readmePath)) {
-                                    fs.writeFileSync(readmePath, '# ' + path.basename(workspaceRoot) + '\n\n项目描述\n', 'utf8');
-                                    vscode.window.showInformationMessage('✅ README.md 文件已创建');
-                                }
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.warn('检查文件状态失败:', error);
-                }
-
-                // 询问是否添加远程仓库
-                const addRemote = await vscode.window.showInformationMessage(
-                    '是否添加远程仓库？',
-                    '添加',
-                    '稍后'
-                );
-
-                if (addRemote === '添加') {
-                    await vscode.commands.executeCommand('git-assistant.addRemote');
-                }
+                // 记录命令历史
+                CommandHistory.addCommand('git init -b main', '初始化Git仓库', true);
 
                 // 刷新视图
                 branchProvider.refresh();
@@ -231,24 +192,14 @@ export function registerRepositoryInit(
                     `✅ 远程仓库 "${remoteName}" 添加成功！`
                 );
 
-                // 询问是否进行初始提交
-                const doCommit = await vscode.window.showInformationMessage(
-                    '是否进行初始提交并推送？',
-                    '是',
-                    '稍后'
-                );
-
-                if (doCommit === '是') {
-                    await vscode.commands.executeCommand('git-assistant.initialCommit');
-                }
-
             } catch (error) {
                 vscode.window.showErrorMessage(`添加远程仓库失败: ${error}`);
             }
         })
     );
 
-    // 初始提交
+    // 初始提交 - 已取消，仅保留 git init 功能
+    /*
     context.subscriptions.push(
         vscode.commands.registerCommand('git-assistant.initialCommit', async () => {
             try {
@@ -268,9 +219,17 @@ export function registerRepositoryInit(
                     return;
                 }
 
-                const totalFiles = status.modified.length + status.created.length + status.not_added.length;
+                // 检查所有可能的文件状态：未跟踪、已修改、已创建、已暂存
+                const totalFiles = status.modified.length +
+                    status.created.length +
+                    status.not_added.length +
+                    (status.staged?.length || 0);
 
-                if (totalFiles === 0) {
+                // 如果通过数组检查没有文件，再检查 files 数组（更全面的检查）
+                const hasFilesInArrays = totalFiles > 0;
+                const hasFilesInStatus = status.files && status.files.length > 0;
+
+                if (!hasFilesInArrays && !hasFilesInStatus) {
                     const createFile = await vscode.window.showWarningMessage(
                         '当前没有需要提交的文件。是否创建 README.md 文件？',
                         '创建并提交',
@@ -290,8 +249,11 @@ export function registerRepositoryInit(
                     return;
                 }
 
+                // 计算实际文件数量（包括已暂存的文件）
+                const actualFileCount = hasFilesInStatus ? status.files.length : totalFiles;
+
                 // 显示待提交文件
-                const message = `准备添加 ${totalFiles} 个文件到暂存区`;
+                const message = `准备添加 ${actualFileCount} 个文件到暂存区`;
                 const confirm = await vscode.window.showInformationMessage(
                     message,
                     { modal: false },
@@ -382,5 +344,6 @@ export function registerRepositoryInit(
             }
         })
     );
+    */
 }
 

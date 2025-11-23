@@ -20,6 +20,13 @@ export function registerGitOperations(
                 const config = vscode.workspace.getConfiguration('git-assistant');
                 const needConfirm = config.get('confirmPush', true);
 
+                // 检查是否有远程仓库
+                const remotes = await gitService.getRemotes();
+                if (remotes.length === 0) {
+                    vscode.window.showWarningMessage('尚未配置远程仓库，无法推送。请先添加远程仓库。');
+                    return;
+                }
+
                 // 获取当前状态
                 const status = await gitService.getStatus();
 
@@ -27,25 +34,45 @@ export function registerGitOperations(
                 const hasUncommittedChanges = status.modified.length > 0 || status.created.length > 0 || status.deleted.length > 0;
                 const hasUnpushedCommits = (status.ahead || 0) > 0;
 
+                // 如果没有设置上游分支，检查是否有提交可以推送
+                let hasCommitsToPush = hasUnpushedCommits;
+                if (!hasUnpushedCommits && !status.tracking) {
+                    // 检查是否有任何提交（可能还没有设置上游分支）
+                    try {
+                        const log = await gitService.getLog(1);
+                        hasCommitsToPush = log.all && log.all.length > 0;
+                    } catch (error) {
+                        // 如果获取日志失败，假设没有提交
+                        hasCommitsToPush = false;
+                    }
+                }
+
                 // 如果既没有未提交的更改，也没有待推送的提交，则提示
-                if (!hasUncommittedChanges && !hasUnpushedCommits) {
+                if (!hasUncommittedChanges && !hasCommitsToPush) {
                     vscode.window.showInformationMessage('没有需要推送的更改或提交');
                     return;
                 }
 
                 // 构建推送信息
                 let message = '';
-                if (hasUncommittedChanges && hasUnpushedCommits) {
-                    message = `有未提交的更改和 ${status.ahead} 个待推送的提交。推送只会上传已提交的内容。`;
-                } else if (hasUnpushedCommits) {
-                    message = `准备推送 ${status.ahead} 个提交到远程仓库`;
+                const needsUpstream = !status.tracking && hasCommitsToPush;
+
+                if (hasUncommittedChanges && hasCommitsToPush) {
+                    const commitCount = hasUnpushedCommits ? status.ahead : '本地';
+                    message = `有未提交的更改和 ${commitCount} 个待推送的提交。推送只会上传已提交的内容。`;
+                } else if (hasCommitsToPush) {
+                    if (hasUnpushedCommits) {
+                        message = `准备推送 ${status.ahead} 个提交到远程仓库`;
+                    } else {
+                        message = `准备推送本地提交到远程仓库${needsUpstream ? '（将设置上游分支）' : ''}`;
+                    }
                 } else {
                     message = `有未提交的更改，请先提交后再推送`;
                     vscode.window.showWarningMessage(message);
                     return;
                 }
 
-                if (needConfirm && hasUnpushedCommits) {
+                if (needConfirm && hasCommitsToPush) {
                     const choice = await vscode.window.showWarningMessage(
                         message,
                         { modal: true },
@@ -66,7 +93,10 @@ export function registerGitOperations(
                     },
                     async (progress) => {
                         progress.report({ increment: 30 });
-                        const result = await gitService.push();
+                        // 如果没有设置上游分支，使用 pushSetUpstream 方法
+                        const result = needsUpstream
+                            ? await gitService.pushSetUpstream()
+                            : await gitService.push();
                         progress.report({ increment: 70 });
                         return result;
                     }

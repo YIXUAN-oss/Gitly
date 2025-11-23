@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { CommitGraph } from './CommitGraph';
-import { CommitGraph3D } from './CommitGraph3D';
 import { HeatmapAnalysis } from './HeatmapAnalysis';
 import { BranchDependencyGraph } from './BranchDependencyGraph';
 import { TimelineView } from './TimelineView';
@@ -14,7 +13,7 @@ import './App.css';
  * 主应用组件
  */
 export const App: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'graph' | 'graph3d' | 'heatmap' | 'branch-deps' | 'timeline' | 'branches' | 'conflicts' | 'commands' | 'command-ref'>('commands');
+    const [activeTab, setActiveTab] = useState<'graph' | 'heatmap' | 'branch-deps' | 'timeline' | 'branches' | 'conflicts' | 'commands' | 'command-ref'>('commands');
     const [gitData, setGitData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -86,13 +85,7 @@ export const App: React.FC = () => {
                         className={activeTab === 'graph' ? 'active' : ''}
                         onClick={() => setActiveTab('graph')}
                     >
-                        📊 提交图谱
-                    </button>
-                    <button
-                        className={activeTab === 'graph3d' ? 'active' : ''}
-                        onClick={() => setActiveTab('graph3d')}
-                    >
-                        🎯 3D 提交图谱
+                        📊 提交图
                     </button>
                     <button
                         className={activeTab === 'timeline' ? 'active' : ''}
@@ -120,7 +113,6 @@ export const App: React.FC = () => {
                 ) : (
                     <>
                         {activeTab === 'graph' && <CommitGraph data={gitData} />}
-                        {activeTab === 'graph3d' && <CommitGraph3D data={gitData} />}
                         {activeTab === 'heatmap' && <HeatmapAnalysis data={gitData} />}
                         {activeTab === 'branch-deps' && <BranchDependencyGraph data={gitData} />}
                         {activeTab === 'timeline' && <TimelineView data={gitData} />}

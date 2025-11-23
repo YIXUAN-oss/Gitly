@@ -81,17 +81,11 @@ export class DashboardPanel {
                         case 'mergeBranch':
                             await this._handleMergeBranch(message.branch);
                             break;
-                        case 'deleteBranch':
-                            await this._handleDeleteBranch(message.branch);
-                            break;
                         case 'initRepository':
                             await this._executeCommand('git-assistant.initRepository');
                             break;
                         case 'addRemote':
                             await this._executeCommand('git-assistant.addRemote');
-                            break;
-                        case 'initialCommit':
-                            await this._executeCommand('git-assistant.initialCommit');
                             break;
                         case 'resolveConflict':
                             await this._resolveConflict(message.file, message.action);
@@ -101,6 +95,9 @@ export class DashboardPanel {
                             break;
                         case 'copyToClipboard':
                             await this._copyToClipboard(message.text);
+                            break;
+                        case 'openRemoteUrl':
+                            await this._openRemoteUrl(message.url);
                             break;
                         default:
                             console.warn(`Unknown command: ${message.command}`);
@@ -233,60 +230,6 @@ export class DashboardPanel {
     }
 
     /**
-     * 处理删除分支
-     */
-    private async _handleDeleteBranch(branchName: string) {
-        try {
-            console.log(`收到删除分支请求: ${branchName}`);
-
-            if (!branchName) {
-                vscode.window.showErrorMessage('分支名称不能为空');
-                return;
-            }
-
-            // 检查是否是当前分支
-            const branches = await this.gitService.getBranches();
-            if (branchName === branches.current) {
-                vscode.window.showWarningMessage('不能删除当前分支，请先切换到其他分支');
-                return;
-            }
-
-            // 检查分支是否存在
-            if (!branches.all.includes(branchName)) {
-                vscode.window.showWarningMessage(`分支 "${branchName}" 不存在`);
-                return;
-            }
-
-            // 显示确认对话框
-            const confirm = await vscode.window.showWarningMessage(
-                `确定要删除分支 "${branchName}" 吗？`,
-                { modal: true },
-                '删除',
-                '取消'
-            );
-
-            if (confirm !== '删除') {
-                console.log('用户取消了删除操作');
-                return;
-            }
-
-            console.log(`开始删除分支: ${branchName}`);
-            await this.gitService.deleteBranch(branchName);
-            vscode.window.showInformationMessage(`✅ 分支 "${branchName}" 已删除`);
-
-            // 刷新数据以更新UI
-            console.log('刷新Git数据...');
-            await this._sendGitData();
-            console.log('删除分支完成');
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            console.error('删除分支失败:', errorMessage);
-            vscode.window.showErrorMessage(`删除分支失败: ${errorMessage}`);
-            await this._sendGitData();
-        }
-    }
-
-    /**
      * 解决冲突
      */
     private async _resolveConflict(file: string, action: 'current' | 'incoming' | 'both') {
@@ -382,6 +325,18 @@ export class DashboardPanel {
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             vscode.window.showErrorMessage(`复制失败: ${errorMessage}`);
+        }
+    }
+
+    /**
+     * 在浏览器中打开远程仓库 URL
+     */
+    private async _openRemoteUrl(url: string) {
+        try {
+            await vscode.env.openExternal(vscode.Uri.parse(url));
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            vscode.window.showErrorMessage(`无法打开链接: ${errorMessage}`);
         }
     }
 
@@ -811,7 +766,6 @@ export class DashboardPanel {
             </div>
             <div class="button-group">
                 <button onclick="initRepository()">🆕 初始化仓库</button>
-                <button onclick="initialCommit()">📝 初始提交</button>
                 <button onclick="push()">📤 推送 (Push)</button>
                 <button onclick="pull()">📥 拉取 (Pull)</button>
                 <button onclick="createBranch()">🌿 创建分支</button>
@@ -834,10 +788,6 @@ export class DashboardPanel {
             }
             <div class="button-group" style="margin-top: 15px;">
                 <button onclick="addRemote()">➕ 添加远程仓库</button>
-                ${!data.remotes || data.remotes.length === 0
-                ? '<button onclick="initialCommit()">🚀 初始提交并推送</button>'
-                : ''
-            }
             </div>
         </div>
 
@@ -944,9 +894,6 @@ export class DashboardPanel {
             vscode.postMessage({ command: 'addRemote' });
         }
 
-        function initialCommit() {
-            vscode.postMessage({ command: 'initialCommit' });
-        }
 
         function initRepository() {
             vscode.postMessage({ command: 'initRepository' });
@@ -1142,13 +1089,15 @@ export class DashboardPanel {
 
         <div class="quick-start">
             <div class="quick-start-title">💡 快速开始：</div>
-            <p>点击"开始初始化"后，我们将引导您完成：</p>
+            <p>点击"开始初始化"后，将执行：</p>
             <ul style="margin-top: 10px; padding-left: 20px;">
-                <li>初始化Git仓库（<code>git init</code>）</li>
-                <li>重命名分支为 main（<code>git branch -m main</code>）</li>
+                <li>初始化Git仓库（<code>git init -b main</code>）</li>
+            </ul>
+            <p style="margin-top: 15px;">初始化完成后，您可以：</p>
+            <ul style="margin-top: 10px; padding-left: 20px;">
                 <li>添加远程仓库（<code>git remote add origin</code>）</li>
                 <li>添加文件到暂存区（<code>git add .</code>）</li>
-                <li>创建初始提交（<code>git commit</code>）</li>
+                <li>提交更改（<code>git commit</code>）</li>
                 <li>推送到远程仓库（<code>git push -u origin main</code>）</li>
             </ul>
         </div>

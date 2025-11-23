@@ -24,15 +24,6 @@ export const BranchTree: React.FC<{ data: any }> = ({ data }) => {
         });
     };
 
-    const handleDeleteBranch = (branchName: string) => {
-        console.log('准备删除分支:', branchName);
-        vscode.postMessage({
-            command: 'deleteBranch',
-            branch: branchName
-        });
-        console.log('删除分支消息已发送');
-    };
-
     if (!data?.branches) {
         return (
             <div className="empty-state">
@@ -95,16 +86,6 @@ export const BranchTree: React.FC<{ data: any }> = ({ data }) => {
                                         title="合并此分支"
                                     >
                                         🔗
-                                    </button>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteBranch(branch);
-                                        }}
-                                        title="删除此分支"
-                                        className="danger"
-                                    >
-                                        🗑️
                                     </button>
                                 </div>
                             )}

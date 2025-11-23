@@ -13,6 +13,32 @@ interface ContributorStat {
 }
 
 /**
+ * 检测是否为浅色主题
+ */
+const isLightTheme = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const body = document.body;
+    const bgColor = window.getComputedStyle(body).backgroundColor;
+    const rgb = bgColor.match(/\d+/g);
+    if (!rgb || rgb.length < 3) return false;
+    const brightness = (parseInt(rgb[0]) + parseInt(rgb[1]) + parseInt(rgb[2])) / 3;
+    return brightness > 128;
+};
+
+/**
+ * 获取主题相关的颜色
+ */
+const getThemeColors = () => {
+    const light = isLightTheme();
+    return {
+        emptyText: light ? '#666' : '#888',
+        axisText: light ? '#666' : '#ccc',
+        titleText: light ? '#333' : '#fff',
+        labelText: light ? '#333' : '#fff'
+    };
+};
+
+/**
  * 热力图分析组件 - 展示文件修改频率和贡献者活跃度
  */
 export const HeatmapAnalysis: React.FC<{ data: any }> = ({ data }) => {
@@ -29,6 +55,7 @@ export const HeatmapAnalysis: React.FC<{ data: any }> = ({ data }) => {
                 drawFileHeatmap(fileHeatmapRef.current, data.fileStats);
             } else {
                 // 如果没有数据，清空并显示提示
+                const theme = getThemeColors();
                 d3.select(fileHeatmapRef.current).selectAll('*').remove();
                 const width = (fileHeatmapRef.current as any).clientWidth || 800;
                 const height = 400;
@@ -39,7 +66,7 @@ export const HeatmapAnalysis: React.FC<{ data: any }> = ({ data }) => {
                     .attr('x', width / 2)
                     .attr('y', height / 2)
                     .attr('text-anchor', 'middle')
-                    .style('fill', '#888')
+                    .style('fill', theme.emptyText)
                     .text('暂无文件修改数据');
             }
         }
@@ -50,13 +77,14 @@ export const HeatmapAnalysis: React.FC<{ data: any }> = ({ data }) => {
                 drawContributorHeatmap(contributorHeatmapRef.current, data.contributorStats);
             } else {
                 // 如果没有数据，显示提示
+                const theme = getThemeColors();
                 const containerEl = contributorHeatmapRef.current as any;
                 containerEl.innerHTML = '';
                 containerEl.style.display = 'flex';
                 containerEl.style.alignItems = 'center';
                 containerEl.style.justifyContent = 'center';
                 containerEl.style.height = '400px';
-                containerEl.innerHTML = '<p style="text-align: center; color: #888; margin: 0;">暂无贡献者数据</p>';
+                containerEl.innerHTML = `<p style="text-align: center; color: ${theme.emptyText}; margin: 0;">暂无贡献者数据</p>`;
             }
         }
     }, [data, activeTab]);
@@ -67,6 +95,7 @@ export const HeatmapAnalysis: React.FC<{ data: any }> = ({ data }) => {
         const width = (container as any).clientWidth || ((container as any).getBoundingClientRect?.()?.width) || 800;
         const height = 400;
         const margin = { top: 20, right: 20, bottom: 60, left: 200 };
+        const theme = getThemeColors();
 
         const svg = d3.select(container)
             .attr('width', width)
@@ -87,7 +116,7 @@ export const HeatmapAnalysis: React.FC<{ data: any }> = ({ data }) => {
                 .attr('x', width / 2)
                 .attr('y', height / 2)
                 .attr('text-anchor', 'middle')
-                .style('fill', '#888')
+                .style('fill', theme.emptyText)
                 .text('暂无文件修改数据');
             return;
         }
@@ -119,7 +148,7 @@ export const HeatmapAnalysis: React.FC<{ data: any }> = ({ data }) => {
             .attr('width', xScale.bandwidth())
             .attr('height', yScale.bandwidth())
             .attr('fill', (d: FileStat) => colorScale(d.count) as string)
-            .attr('stroke', '#333')
+            .attr('stroke', isLightTheme() ? '#e0e0e0' : '#333')
             .attr('stroke-width', 1)
             .append('title')
             .text((d: FileStat) => `${d.path}\n修改次数: ${d.count}`);
@@ -134,7 +163,7 @@ export const HeatmapAnalysis: React.FC<{ data: any }> = ({ data }) => {
             .attr('y', (d: FileStat) => (yScale(d.path) || 0) + yScale.bandwidth() / 2)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
-            .style('fill', (d: FileStat) => d.count > maxCount / 2 ? '#fff' : '#000')
+            .style('fill', (d: FileStat) => d.count > maxCount / 2 ? theme.labelText : (isLightTheme() ? '#333' : '#fff'))
             .style('font-size', '10px')
             .text((d: FileStat) => d.count.toString());
 
@@ -144,7 +173,7 @@ export const HeatmapAnalysis: React.FC<{ data: any }> = ({ data }) => {
             .call(d3.axisLeft(yScale))
             .selectAll('text')
             .style('font-size', '10px')
-            .style('fill', '#ccc')
+            .style('fill', theme.axisText)
             .call((text: any) => {
                 text.each(function (this: SVGTextElement) {
                     const textEl = d3.select(this);
@@ -162,7 +191,7 @@ export const HeatmapAnalysis: React.FC<{ data: any }> = ({ data }) => {
             .attr('text-anchor', 'middle')
             .style('font-size', '14px')
             .style('font-weight', 'bold')
-            .style('fill', '#fff')
+            .style('fill', theme.titleText)
             .text('文件修改频率热力图（Top 20）');
     };
 
@@ -174,6 +203,8 @@ export const HeatmapAnalysis: React.FC<{ data: any }> = ({ data }) => {
         containerEl.style.alignItems = '';
         containerEl.style.justifyContent = '';
         containerEl.style.height = '';
+
+        const theme = getThemeColors();
 
         // 转换数据
         const statsArray: ContributorStat[] = Array.isArray(contributorStats)
@@ -189,7 +220,7 @@ export const HeatmapAnalysis: React.FC<{ data: any }> = ({ data }) => {
             containerEl.style.alignItems = 'center';
             containerEl.style.justifyContent = 'center';
             containerEl.style.height = '400px';
-            containerEl.innerHTML = '<p style="text-align: center; color: #888; margin: 0;">暂无贡献者数据</p>';
+            containerEl.innerHTML = `<p style="text-align: center; color: ${theme.emptyText}; margin: 0;">暂无贡献者数据</p>`;
             return;
         }
 
@@ -282,7 +313,7 @@ export const HeatmapAnalysis: React.FC<{ data: any }> = ({ data }) => {
                         marginRight: '10px'
                     }}
                 >
-                    📁 文件修改频率
+                    文件修改频率
                 </button>
                 <button
                     className={activeTab === 'contributors' ? 'active' : ''}
@@ -296,7 +327,7 @@ export const HeatmapAnalysis: React.FC<{ data: any }> = ({ data }) => {
                         cursor: 'pointer'
                     }}
                 >
-                    👥 贡献者活跃度
+                    贡献者活跃度
                 </button>
             </div>
 

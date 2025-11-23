@@ -308,7 +308,7 @@ export class GitService {
         try {
             // 使用 git log --name-only 来获取文件变更，更可靠
             const log = await git.log({
-                since: since.toISOString(),
+                '--since': since.toISOString(),
                 maxCount: 1000,
                 '--name-only': null
             });
@@ -400,7 +400,7 @@ export class GitService {
 
         try {
             const log = await git.log({
-                since: since.toISOString(),
+                '--since': since.toISOString(),
                 maxCount: 1000
             });
 

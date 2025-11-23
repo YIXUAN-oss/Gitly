@@ -202,6 +202,18 @@
     border: 1px solid var(--vscode-panel-border);
     border-radius: 8px;
     padding: 20px;
+    position: relative;
+    overflow: auto;
+}
+
+.graph-container canvas {
+    background: var(--vscode-sideBar-background);
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 600px;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
 }
 
 /* 分支树 */

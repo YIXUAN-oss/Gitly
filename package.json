@@ -60,8 +60,13 @@
                 "icon": "$(cloud)"
             },
             {
-                "command": "git-assistant.initialCommit",
-                "title": "Git Assistant: 初始提交",
+                "command": "git-assistant.addFiles",
+                "title": "Git Assistant: 添加文件 (Add)",
+                "icon": "$(add)"
+            },
+            {
+                "command": "git-assistant.commitChanges",
+                "title": "Git Assistant: 提交更改 (Commit)",
                 "icon": "$(check)"
             },
             {

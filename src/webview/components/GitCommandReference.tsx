@@ -295,7 +295,7 @@ export const GitCommandReference: React.FC = () => {
                     }}
                     value={searchTerm}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        const value = e.target.value;
+                        const value = e.currentTarget.value;
                         setSearchTerm(value);
                         // 如果搜索，自动展开匹配的分类
                         if (value.trim()) {

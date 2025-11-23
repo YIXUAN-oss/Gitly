@@ -1,6 +1,22 @@
 import React, { useEffect, useRef } from 'react';
 
 /**
+ * 辅助函数：截断文本以适应宽度
+ */
+const truncateText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string => {
+    const metrics = ctx.measureText(text);
+    if (metrics.width <= maxWidth) {
+        return text;
+    }
+
+    let truncated = text;
+    while (ctx.measureText(truncated + '...').width > maxWidth && truncated.length > 0) {
+        truncated = truncated.slice(0, -1);
+    }
+    return truncated;
+};
+
+/**
  * 提交历史图谱组件
  */
 export const CommitGraph: React.FC<{ data: any }> = ({ data }) => {
@@ -12,66 +28,159 @@ export const CommitGraph: React.FC<{ data: any }> = ({ data }) => {
         }
 
         const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', {
+            alpha: false, // 禁用透明度以提高性能
+            desynchronized: false
+        });
         if (!ctx) {
             return;
         }
 
-        // 设置画布大小
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
+        // 获取设备像素比，用于高DPI显示
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        const displayWidth = rect.width;
+        const displayHeight = rect.height;
+
+        // 设置画布实际大小（考虑DPI）
+        canvas.width = displayWidth * dpr;
+        canvas.height = displayHeight * dpr;
+
+        // 设置画布显示大小
+        canvas.style.width = displayWidth + 'px';
+        canvas.style.height = displayHeight + 'px';
+
+        // 缩放上下文以匹配DPI
+        ctx.scale(dpr, dpr);
+
+        // 启用文本平滑
+        ctx.textBaseline = 'middle';
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // 获取背景色
+        const computedStyle = getComputedStyle(canvas.parentElement || document.body);
+        const backgroundColor = computedStyle.backgroundColor || '#1e1e1e';
 
         // 绘制提交图谱
-        drawCommitGraph(ctx, data.log.all, canvas.width, canvas.height);
+        drawCommitGraph(ctx, data.log.all, displayWidth, displayHeight, backgroundColor);
     }, [data]);
 
     const drawCommitGraph = (
         ctx: any,
         commits: any[],
         width: number,
-        height: number
+        height: number,
+        backgroundColor: string = '#1e1e1e'
     ) => {
-        ctx.clearRect(0, 0, width, height);
+        // 清空画布，使用背景色填充
+        ctx.fillStyle = backgroundColor;
+        ctx.fillRect(0, 0, width, height);
 
-        const commitHeight = 60;
-        const commitRadius = 8;
-        const leftMargin = 50;
-        const topMargin = 30;
+        if (!commits || commits.length === 0) {
+            return;
+        }
+
+        // 根据提交数量动态调整高度
+        const commitHeight = 75; // 增加高度以容纳更大字体
+        const commitRadius = 6;
+        const leftMargin = 60;
+        const topMargin = 25;
+        const textX = leftMargin + 25;
+        const maxWidth = width - textX - 20;
+
+        // 设置字体，使用系统字体栈以提高清晰度
+        // 使用更大的字号以提高清晰度
+        const hashFont = 'bold 13px "Consolas", "Monaco", "Courier New", "Menlo", monospace';
+        const messageFont = '15px -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif';
+        const metaFont = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif';
 
         commits.forEach((commit, index) => {
             const y = topMargin + index * commitHeight;
             const x = leftMargin;
 
-            // 绘制连接线
+            // 绘制连接线 - 使用更粗的线以提高可见性
             if (index > 0) {
                 ctx.strokeStyle = '#569cd6';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = 'round';
                 ctx.beginPath();
                 ctx.moveTo(x, y - commitHeight + commitRadius);
                 ctx.lineTo(x, y - commitRadius);
                 ctx.stroke();
             }
 
-            // 绘制提交节点
+            // 绘制提交节点 - 添加边框以提高可见性
             ctx.fillStyle = '#569cd6';
             ctx.beginPath();
             ctx.arc(x, y, commitRadius, 0, 2 * Math.PI);
             ctx.fill();
 
-            // 绘制提交信息
-            ctx.fillStyle = '#cccccc';
-            ctx.font = '12px monospace';
-            ctx.fillText(commit.hash.substring(0, 8), x + 20, y - 10);
+            // 添加节点外圈高光
+            ctx.strokeStyle = '#7db3d3';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(x, y, commitRadius + 1, 0, 2 * Math.PI);
+            ctx.stroke();
 
+            // 绘制提交哈希 - 使用更清晰的颜色和字体
+            ctx.fillStyle = '#85c1e9';
+            ctx.font = hashFont;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            const hashText = commit.hash.substring(0, 8);
+            ctx.fillText(hashText, textX, y - 20);
+
+            // 绘制提交消息 - 使用更清晰的字体和颜色
             ctx.fillStyle = '#ffffff';
-            ctx.font = '14px sans-serif';
+            ctx.font = messageFont;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
             const message = commit.message.split('\n')[0];
-            const truncated = message.length > 50 ? message.substring(0, 50) + '...' : message;
-            ctx.fillText(truncated, x + 20, y + 10);
 
-            ctx.fillStyle = '#888888';
-            ctx.font = '11px sans-serif';
-            ctx.fillText(`${commit.author_name} · ${new Date(commit.date).toLocaleDateString('zh-CN')}`, x + 20, y + 25);
+            // 文本换行处理，支持中英文混合
+            const words = message.split(/(\s+)/);
+            let line = '';
+            let lineY = y + 5;
+            const lineHeight = 19;
+            const maxLines = 2;
+            let lineCount = 0;
+
+            for (let i = 0; i < words.length && lineCount < maxLines; i++) {
+                if (!words[i].trim()) continue; // 跳过空白字符
+                const testLine = line + words[i];
+                const metrics = ctx.measureText(testLine);
+                if (metrics.width > maxWidth && line) {
+                    ctx.fillText(line, textX, lineY);
+                    line = words[i];
+                    lineY += lineHeight;
+                    lineCount++;
+                } else {
+                    line = testLine;
+                }
+            }
+            if (line && lineCount < maxLines) {
+                ctx.fillText(line, textX, lineY);
+            } else if (lineCount >= maxLines && line) {
+                // 如果超过最大行数，截断并添加省略号
+                const truncated = truncateText(ctx, line, maxWidth - 20) + '...';
+                ctx.fillText(truncated, textX, lineY);
+            }
+
+            // 绘制作者和日期信息 - 使用更清晰的颜色
+            ctx.fillStyle = '#a8a8a8';
+            ctx.font = metaFont;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            const dateStr = new Date(commit.date).toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            const metaText = `${commit.author_name} · ${dateStr}`;
+            ctx.fillText(metaText, textX, lineY + lineHeight + 5);
         });
     };
 
@@ -84,7 +193,15 @@ export const CommitGraph: React.FC<{ data: any }> = ({ data }) => {
                 </p>
             </div>
             <div className="graph-container">
-                <canvas ref={canvasRef} style={{ width: '100%', height: '600px' }} />
+                <canvas
+                    ref={canvasRef}
+                    style={{
+                        width: '100%',
+                        height: '600px',
+                        display: 'block',
+                        imageRendering: 'crisp-edges'
+                    }}
+                />
             </div>
             {!data?.log && (
                 <div className="empty-state">

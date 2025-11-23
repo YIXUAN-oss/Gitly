@@ -7,6 +7,37 @@ interface TimelineData {
 }
 
 /**
+ * 检测是否为浅色主题
+ */
+const isLightTheme = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const body = document.body;
+    const bgColor = window.getComputedStyle(body).backgroundColor;
+    // 解析 RGB 值
+    const rgb = bgColor.match(/\d+/g);
+    if (!rgb || rgb.length < 3) return false;
+    // 计算亮度 (0-255)
+    const brightness = (parseInt(rgb[0]) + parseInt(rgb[1]) + parseInt(rgb[2])) / 3;
+    return brightness > 128;
+};
+
+/**
+ * 获取主题相关的颜色
+ */
+const getThemeColors = () => {
+    const light = isLightTheme();
+    return {
+        emptyText: light ? '#666' : '#888',
+        axisText: light ? '#666' : '#ccc',
+        titleText: light ? '#333' : '#fff',
+        gridLine: light ? '#e0e0e0' : '#333',
+        emptyCell: light ? '#f5f5f5' : '#2d2d2d',
+        labelText: light ? '#333' : '#fff',
+        inactiveText: light ? '#999' : '#888'
+    };
+};
+
+/**
  * 时间线视图组件 - 结合日历的提交时间线
  */
 export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
@@ -44,6 +75,7 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
         const width = (container as any).clientWidth || ((container as any).getBoundingClientRect?.()?.width) || 1000;
         const height = 300;
         const margin = { top: 20, right: 20, bottom: 50, left: 60 };
+        const theme = getThemeColors();
 
         const svg = d3.select(container)
             .attr('width', width)
@@ -59,7 +91,7 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
                 .attr('x', width / 2)
                 .attr('y', height / 2)
                 .attr('text-anchor', 'middle')
-                .style('fill', '#888')
+                .style('fill', theme.emptyText)
                 .text('暂无时间线数据');
             return;
         }
@@ -84,7 +116,7 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
                 .attr('x', width / 2)
                 .attr('y', height / 2)
                 .attr('text-anchor', 'middle')
-                .style('fill', '#888')
+                .style('fill', theme.emptyText)
                 .text(`暂无 ${year}年${month}月 的数据`);
             return;
         }
@@ -110,7 +142,7 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
             .attr('y', (d: TimelineData) => yScale(d.count))
             .attr('width', xScale.bandwidth())
             .attr('height', (d: TimelineData) => height - margin.bottom - yScale(d.count))
-            .attr('fill', (d: TimelineData) => d.count > 0 ? '#569cd6' : '#2d2d2d')
+            .attr('fill', (d: TimelineData) => d.count > 0 ? '#0e639c' : theme.emptyCell)
             .attr('rx', 2)
             .attr('ry', 2)
             .append('title')
@@ -128,7 +160,7 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
             .attr('x', (d: TimelineData) => (xScale(d.date) || 0) + xScale.bandwidth() / 2)
             .attr('y', (d: TimelineData) => yScale(d.count) - 5)
             .attr('text-anchor', 'middle')
-            .style('fill', '#fff')
+            .style('fill', theme.labelText)
             .style('font-size', '10px')
             .style('font-weight', 'bold')
             .text((d: TimelineData) => d.count.toString());
@@ -145,7 +177,7 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
             .attr('transform', `translate(0, ${height - margin.bottom})`)
             .call(xAxis)
             .selectAll('text')
-            .style('fill', '#ccc')
+            .style('fill', theme.axisText)
             .style('font-size', '10px')
             .style('text-anchor', 'middle');
 
@@ -154,7 +186,7 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
             .attr('x', width / 2)
             .attr('y', height - 10)
             .attr('text-anchor', 'middle')
-            .style('fill', '#888')
+            .style('fill', theme.emptyText)
             .style('font-size', '12px')
             .text('日期');
 
@@ -166,7 +198,7 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
             .attr('transform', `translate(${margin.left}, 0)`)
             .call(yAxis)
             .selectAll('text')
-            .style('fill', '#ccc')
+            .style('fill', theme.axisText)
             .style('font-size', '10px');
 
         // 添加Y轴标题
@@ -175,7 +207,7 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
             .attr('x', -height / 2)
             .attr('y', 20)
             .attr('text-anchor', 'middle')
-            .style('fill', '#888')
+            .style('fill', theme.emptyText)
             .style('font-size', '12px')
             .text('提交次数');
 
@@ -188,7 +220,7 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
                 .tickSize(-width + margin.left + margin.right)
                 .tickFormat(() => '') as any)
             .selectAll('line')
-            .attr('stroke', '#333')
+            .attr('stroke', theme.gridLine)
             .attr('stroke-dasharray', '3,3')
             .attr('opacity', 0.3);
 
@@ -199,13 +231,16 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
             .attr('text-anchor', 'middle')
             .style('font-size', '14px')
             .style('font-weight', 'bold')
-            .style('fill', '#fff')
+            .style('fill', theme.titleText)
             .text(`${year}年${month}月 每日提交统计`);
     };
 
     const drawCalendar = (container: HTMLDivElement, timeline: Map<string, number> | TimelineData[], year: number, month: number) => {
         const containerEl = container as any;
         containerEl.innerHTML = '';
+
+        const theme = getThemeColors();
+        const light = isLightTheme();
 
         // 转换数据
         const timelineMap = new Map<string, number>();
@@ -219,10 +254,12 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
         const calendarDiv = document.createElement('div');
         calendarDiv.style.display = 'grid';
         calendarDiv.style.gridTemplateColumns = 'repeat(7, 1fr)';
-        calendarDiv.style.gap = '4px';
-        calendarDiv.style.padding = '20px';
+        calendarDiv.style.gap = '3px';
+        calendarDiv.style.padding = '12px';
         calendarDiv.style.background = 'var(--vscode-sideBar-background)';
         calendarDiv.style.borderRadius = '8px';
+        calendarDiv.style.maxWidth = '600px';
+        calendarDiv.style.margin = '0 auto';
 
         // 星期标题
         const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
@@ -230,8 +267,9 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
             const dayHeader = document.createElement('div');
             dayHeader.style.textAlign = 'center';
             dayHeader.style.fontWeight = 'bold';
-            dayHeader.style.padding = '8px';
-            dayHeader.style.color = '#888';
+            dayHeader.style.padding = '5px';
+            dayHeader.style.fontSize = '11px';
+            dayHeader.style.color = theme.inactiveText;
             dayHeader.textContent = day;
             calendarDiv.appendChild(dayHeader);
         });
@@ -245,10 +283,11 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
         // 生成42天的网格（6周）
         const maxCount = Math.max(...Array.from(timelineMap.values()), 1);
         const getColor = (count: number) => {
-            if (count === 0) return '#2d2d2d';
+            if (count === 0) return theme.emptyCell;
+            // 使用固定的 #0e639c 颜色，根据提交数量调整透明度
             const intensity = Math.min(count / maxCount, 1);
-            const hue = 200 - intensity * 100; // 从蓝色到绿色
-            return `hsl(${hue}, 70%, ${30 + intensity * 30}%)`;
+            const opacity = light ? 0.2 + intensity * 0.6 : 0.3 + intensity * 0.7;
+            return `rgba(14, 99, 156, ${opacity})`;
         };
 
         for (let i = 0; i < 42; i++) {
@@ -266,10 +305,11 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
             dayCell.style.alignItems = 'center';
             dayCell.style.justifyContent = 'center';
             dayCell.style.background = getColor(count);
-            dayCell.style.borderRadius = '4px';
+            dayCell.style.borderRadius = '3px';
             dayCell.style.cursor = 'pointer';
             dayCell.style.opacity = isCurrentMonth ? '1' : '0.4';
             dayCell.style.transition = 'transform 0.2s';
+            dayCell.style.border = count > 0 ? '1px solid rgba(14, 99, 156, 0.8)' : 'none';
             dayCell.title = `${dateKey}\n${count} 次提交`;
 
             dayCell.onmouseenter = () => {
@@ -280,16 +320,19 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
             };
 
             const dayNumber = document.createElement('div');
-            dayNumber.style.fontSize = '12px';
-            dayNumber.style.color = count > 0 ? '#fff' : '#888';
+            dayNumber.style.fontSize = '10px';
+            // 有提交的日期使用对比度高的颜色，无提交的日期使用主题文本颜色
+            dayNumber.style.color = count > 0
+                ? (light ? '#fff' : '#fff')
+                : theme.inactiveText;
             dayNumber.style.fontWeight = count > 0 ? 'bold' : 'normal';
             dayNumber.textContent = currentDate.getDate().toString();
 
             if (count > 0) {
                 const countBadge = document.createElement('div');
-                countBadge.style.fontSize = '10px';
+                countBadge.style.fontSize = '9px';
                 countBadge.style.color = '#fff';
-                countBadge.style.marginTop = '2px';
+                countBadge.style.marginTop = '1px';
                 countBadge.textContent = count.toString();
                 dayCell.appendChild(dayNumber);
                 dayCell.appendChild(countBadge);
@@ -316,7 +359,7 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
             </div>
 
             <div style={{ marginBottom: '20px', display: 'flex', gap: '15px', alignItems: 'center' }}>
-                <label style={{ color: '#ccc' }}>选择年份：</label>
+                <label style={{ color: 'var(--vscode-foreground)' }}>选择年份：</label>
                 <select
                     value={String(selectedYear)}
                     onChange={(e) => {
@@ -337,7 +380,7 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
                     ))}
                 </select>
 
-                <label style={{ color: '#ccc', marginLeft: '20px' }}>选择月份：</label>
+                <label style={{ color: 'var(--vscode-foreground)', marginLeft: '20px' }}>选择月份：</label>
                 <select
                     value={String(selectedMonth)}
                     onChange={(e) => {
@@ -377,7 +420,7 @@ export const TimelineView: React.FC<{ data: any }> = ({ data }) => {
                 <div className="empty-state" style={{
                     textAlign: 'center',
                     padding: '40px',
-                    color: '#888'
+                    color: 'var(--vscode-descriptionForeground)'
                 }}>
                     <p>📅 暂无时间线数据</p>
                     <p style={{ fontSize: '12px', marginTop: '10px' }}>

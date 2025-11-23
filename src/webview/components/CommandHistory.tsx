@@ -1,5 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+/**
+ * 将 Git URL 转换为浏览器可访问的 URL
+ */
+function convertGitUrlToBrowserUrl(gitUrl: string): string | null {
+    if (!gitUrl) return null;
+
+    // 处理 SSH 格式: git@github.com:username/repo.git
+    if (gitUrl.startsWith('git@')) {
+        const match = gitUrl.match(/git@([^:]+):(.+)\.git$/);
+        if (match) {
+            const [, host, path] = match;
+            // 支持常见的 Git 托管服务
+            if (host.includes('github.com')) {
+                return `https://github.com/${path}`;
+            } else if (host.includes('gitlab.com')) {
+                return `https://gitlab.com/${path}`;
+            } else if (host.includes('bitbucket.org')) {
+                return `https://bitbucket.org/${path}`;
+            } else if (host.includes('gitee.com')) {
+                return `https://gitee.com/${path}`;
+            } else {
+                // 通用格式
+                return `https://${host}/${path}`;
+            }
+        }
+    }
+
+    // 处理 HTTPS 格式: https://github.com/username/repo.git
+    if (gitUrl.startsWith('http://') || gitUrl.startsWith('https://')) {
+        // 移除 .git 后缀
+        return gitUrl.replace(/\.git$/, '');
+    }
+
+    return null;
+}
+
 interface CommandHistoryItem {
     id: string;
     command: string;
@@ -219,7 +255,64 @@ export const CommandHistory: React.FC<{ data: any }> = ({ data }) => {
                             {!repositoryState.hasRemote ? (
                                 <div>⚠️ 未配置远程仓库</div>
                             ) : (
-                                <div>✅ 已配置远程仓库</div>
+                                <div>
+                                    <div>✅ 已配置远程仓库</div>
+                                    {data?.remotes && data.remotes.length > 0 && (
+                                        <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            {data.remotes.map((remote: any) => {
+                                                const remoteUrl = remote.refs?.fetch || remote.refs?.push || '';
+                                                const browserUrl = convertGitUrlToBrowserUrl(remoteUrl);
+                                                return (
+                                                    <div
+                                                        key={remote.name}
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '8px',
+                                                            padding: '6px 10px',
+                                                            background: 'var(--vscode-list-hoverBackground)',
+                                                            borderRadius: '4px',
+                                                            cursor: browserUrl ? 'pointer' : 'default'
+                                                        }}
+                                                        onClick={() => {
+                                                            if (browserUrl) {
+                                                                vscode.postMessage({
+                                                                    command: 'openRemoteUrl',
+                                                                    url: browserUrl
+                                                                });
+                                                            }
+                                                        }}
+                                                        onMouseEnter={(e) => {
+                                                            if (browserUrl) {
+                                                                (e.currentTarget as any).style.background = 'var(--vscode-list-activeSelectionBackground)';
+                                                            }
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            if (browserUrl) {
+                                                                (e.currentTarget as any).style.background = 'var(--vscode-list-hoverBackground)';
+                                                            }
+                                                        }}
+                                                        title={browserUrl ? `点击在浏览器中打开: ${browserUrl}` : '无法转换为浏览器链接'}
+                                                    >
+                                                        <span style={{ fontSize: '14px' }}>🔗</span>
+                                                        <span style={{ flex: 1, fontSize: '12px' }}>
+                                                            <strong>{remote.name}</strong>: {remoteUrl}
+                                                        </span>
+                                                        {browserUrl && (
+                                                            <span style={{
+                                                                fontSize: '10px',
+                                                                color: 'var(--vscode-textLink-foreground)',
+                                                                textDecoration: 'underline'
+                                                            }}>
+                                                                打开 →
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
                             )}
 
                             {repositoryState.hasUncommittedChanges && (
@@ -361,7 +454,17 @@ export const CommandHistory: React.FC<{ data: any }> = ({ data }) => {
                                                         {!isAvailable && <span style={{ fontSize: '10px', marginLeft: '5px', color: 'var(--vscode-descriptionForeground)' }}>(不可用)</span>}
                                                     </div>
                                                     <div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>
-                                                        {cmd.description}
+                                                        {cmd.description.split(' (')[0]}
+                                                        {cmd.description.includes('(') && (
+                                                            <span style={{
+                                                                color: 'var(--vscode-textLink-foreground)',
+                                                                fontFamily: 'monospace',
+                                                                fontSize: '10px',
+                                                                marginLeft: '4px'
+                                                            }}>
+                                                                {cmd.description.match(/\(([^)]+)\)/)?.[1]}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
