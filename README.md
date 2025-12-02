@@ -383,7 +383,7 @@ npm run package
 
 - 问题反馈：[GitHub Issues](https://github.com/yourusername/git-assistant/issues)
 - 功能建议：[GitHub Discussions](https://github.com/yourusername/git-assistant/discussions)
-- 邮箱：your.email@example.com
+- 邮箱：byyi.xuan@outlook.com
 
 ---
 

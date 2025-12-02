@@ -198,7 +198,7 @@ git-assistant/
 
 - Issues：<https://github.com/yourusername/git-assistant/issues>
 - Discussions：<https://github.com/yourusername/git-assistant/discussions>
-- 邮箱：your.email@example.com
+- 邮箱：byyi.xuan@outlook.com
 
 ---
 
