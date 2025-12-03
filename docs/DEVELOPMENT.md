@@ -2,7 +2,7 @@
 
 本文档提供 Git Assistant 扩展的详细开发指南。
 
-> **当前版本**：v1.0.0 | **最后更新**：2025-11-26
+> **当前版本**：v1.0.1 | **最后更新**：2025-12-03
 
 ## 📋 目录
 
@@ -414,9 +414,9 @@ class GitService {
 
 ```bash
 # 更新版本号
-npm version patch  # 1.0.0 -> 1.0.1
-npm version minor  # 1.0.0 -> 1.1.0
-npm version major  # 1.0.0 -> 2.0.0
+npm version patch  # 1.0.1 -> 1.0.2
+npm version minor  # 1.0.1 -> 1.1.0
+npm version major  # 1.0.1 -> 2.0.0
 ```
 
 ### 2. 更新文档
@@ -450,7 +450,7 @@ npm install -g @vscode/vsce
 # 打包扩展
 vsce package
 
-# 生成 git-assistant-1.0.0.vsix
+# 生成 git-assistant-1.0.1.vsix
 ```
 
 ### 5. 发布
@@ -469,8 +469,8 @@ vsce publish
 
 ```bash
 # 创建标签
-git tag -a v1.0.0 -m "Release v1.0.0"
-git push origin v1.0.0
+git tag -a v1.0.1 -m "Release v1.0.1"
+git push origin v1.0.1
 
 # 在 GitHub 上创建 Release
 # 上传 .vsix 文件作为附件
@@ -548,4 +548,4 @@ CommandHistory.addCommand('git push', '推送', false, '认证失败');
 
 ---
 
-如有疑问，请在 [GitHub Discussions](https://github.com/yourusername/git-assistant/discussions) 提问。
+如有疑问，请在 [GitHub Discussions](https://github.com/YIXUAN-oss/CodeGitAssistant/discussions) 提问。

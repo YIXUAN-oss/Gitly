@@ -8,7 +8,7 @@
 
 如果您发现了Bug，请通过以下方式报告：
 
-1. 在 [GitHub Issues](https://github.com/yourusername/git-assistant/issues) 创建新Issue
+1. 在 [GitHub Issues](https://github.com/YIXUAN-oss/CodeGitAssistant/issues) 创建新Issue
 2. 使用清晰的标题描述问题
 3. 提供详细的重现步骤
 4. 附上错误信息和截图（如果可能）
@@ -18,7 +18,7 @@
 
 我们欢迎新功能建议！
 
-1. 在 [GitHub Discussions](https://github.com/yourusername/git-assistant/discussions) 发起讨论
+1. 在 [GitHub Discussions](https://github.com/YIXUAN-oss/CodeGitAssistant/discussions) 发起讨论
 2. 清楚地描述您期望的功能
 3. 解释为什么这个功能对您和其他用户有用
 4. 如果可能，提供使用场景示例
@@ -272,15 +272,15 @@ npm test -- --grep "GitService"
 
 如果您有任何疑问：
 
-- 查看 [文档](https://github.com/yourusername/git-assistant/wiki)
-- 在 [Discussions](https://github.com/yourusername/git-assistant/discussions) 提问
+- 查看 [文档](https://github.com/YIXUAN-oss/CodeGitAssistant/wiki)
+- 在 [Discussions](https://github.com/YIXUAN-oss/CodeGitAssistant/discussions) 提问
 - 发送邮件至 support@gitassistant.com
 
 ## 🎉 致谢
 
 感谢所有为本项目做出贡献的开发者！
 
-您的贡献将被记录在 [贡献者列表](https://github.com/yourusername/git-assistant/graphs/contributors) 中。
+您的贡献将被记录在 [贡献者列表](https://github.com/YIXUAN-oss/CodeGitAssistant/graphs/contributors) 中。
 
 ---
 

@@ -6,7 +6,7 @@
 
 **专为 VS Code 构建的 Git 可视化助手，让版本管理变得又快又稳。**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/yourusername/git-assistant)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/YIXUAN-oss/CodeGitAssistant/releases/tag/v1.0.1)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![VS Code](https://img.shields.io/badge/VS%20Code-1.80%2B-007ACC.svg)](https://code.visualstudio.com/)
 
@@ -14,8 +14,8 @@
 
 ## 📌 项目速览
 
-- **版本**：v1.0.0（VS Code 1.80+，Node.js 16+，Git 2.0+）
-- **状态**：🟢 初代正式版（2025-11-26 发布） · 持续维护
+- **版本**：v1.0.1（VS Code 1.80+，Node.js 16+，Git 2.0+）
+- **状态**：🟢 v1.0.1 正式版（2025-12-03 发布） · 持续维护
 - **定位**：面向团队协作的 Git 操作工作台，整合命令、可视化与自动防护
 - **技术栈**：TypeScript + VS Code Extension API + React 18 + D3.js + simple-git
 - **性能指标**：扩展激活 < 500ms · 面板基础数据 < 400ms · 大仓库统计 < 1.5s
@@ -136,7 +136,8 @@
   "git-assistant.autoFetch": true,
   "git-assistant.confirmPush": true,
   "git-assistant.maxHistoryCount": 100,
-  "git-assistant.conflictHighlight": true
+  "git-assistant.conflictHighlight": true,
+  "git-assistant.defaultRemote": "origin"
 }
 ```
 
@@ -144,18 +145,31 @@
 
 ```
 git-assistant/
+├── docs/                        # DEVELOPMENT / QUICKSTART / TESTING
+├── dist/                        # Webpack 打包产物
+├── resources/                   # 扩展图标与截图
 ├── src/
-│   ├── extension.ts              # 扩展入口
-│   ├── commands/                 # Git/分支/标签/冲突等命令
-│   ├── providers/                # 分支/历史/冲突 TreeDataProvider
-│   ├── services/                 # GitService simple-git 封装
-│   ├── webview/                  # React 控制面板（10 个标签）
-│   ├── utils/                    # 命令历史、日志、通知、常量
-│   └── types/                    # 类型定义
-├── docs/                         # 文档集合（开发/测试/快速开始）
-├── dist/                         # Webpack 构建产物
-├── resources/                    # 扩展图标等静态资源
-└── README*.md / package*.json / tsconfig.json / webpack.config.js
+│   ├── extension.ts             # 扩展入口
+│   ├── commands/
+│   │   ├── index.ts             # 命令注册中心
+│   │   ├── git-operations.ts    # Push/Pull/Clone
+│   │   ├── branch-manager.ts    # 分支管理
+│   │   ├── conflict-resolver.ts # 冲突解决
+│   │   ├── repository-init.ts   # 初始化/远程/初始提交
+│   │   └── tag-manager.ts       # 标签管理
+│   ├── providers/               # 分支/历史/冲突 TreeDataProvider
+│   ├── services/                # git-service.ts（simple-git 封装）
+│   ├── types/                   # git.ts 等类型定义
+│   ├── utils/                   # 命令历史/日志/通知/常量
+│   └── webview/                 # React 控制面板（10 标签）
+│       ├── components/          # App.tsx + 各功能组件
+│       ├── dashboard-panel.ts   # Webview 管理
+│       ├── utils/               # theme/url 等工具
+│       └── index.tsx / globals.d.ts / tsconfig.json
+├── package.json
+├── README*.md
+├── tsconfig.json
+└── webpack.config.js
 ```
 
 ## 📈 性能指标
@@ -171,8 +185,15 @@ git-assistant/
 - **开发/构建**：`typescript`, `webpack`, `ts-loader`, `eslint`, `@vscode/test-electron`
 - **工程规范**：TypeScript 严格模式、ESLint、JSDoc、PascalCase/camelCase/UPPER_SNAKE_CASE 命名约定
 
-## 📝 更新日志（v1.0.0 - 2025-11-26）
+## 📝 更新日志
 
+### v1.0.1 (2025-12-03)
+- 🗂️ README/README_CN/PROJECT_OVERVIEW/PROJECT_DETAILS/QUICK_REFERENCE 等文档全面同步最新目录结构与数据流
+- ⚙️ 配置说明补充 `git-assistant.defaultRemote`，快速推送/拉取可记住默认远程仓库
+- 🧭 控制面板与命令清单文案对齐现有 10 个标签页与 QuickPick 快捷操作
+- 📦 VSIX、测试用标签/示例命令统一为 1.0.1，发布流程说明同步
+
+### v1.0.0 (2025-11-26)
 - 🎉 初代正式版发布
 - ✨ Push/Pull/Clone/Add/Commit 等核心 Git 操作
 - 🚀 仓库初始化向导（init → remote → add → commit → push）
@@ -196,8 +217,8 @@ git-assistant/
 
 ## 📮 联系方式
 
-- Issues：<https://github.com/yourusername/git-assistant/issues>
-- Discussions：<https://github.com/yourusername/git-assistant/discussions>
+- Issues：<https://github.com/YIXUAN-oss/CodeGitAssistant/issues>
+- Discussions：<https://github.com/YIXUAN-oss/CodeGitAssistant/discussions>
 - 邮箱：byyi.xuan@outlook.com
 
 ---
@@ -206,7 +227,7 @@ git-assistant/
 
 **喜欢这个项目？欢迎点亮 ⭐️！**
 
-Made with ❤️ by [Your Name]
+Made with ❤️ by Yixuan
 
 </div>
 
@@ -322,12 +343,12 @@ A: 重新加载窗口 (Ctrl+R) 或重启VS Code
 
 ## 📈 路线图
 
-### v1.0.1 (计划中)
-- [ ] 完整的Git操作覆盖
-- [ ] AI辅助冲突解决
-- [ ] 团队协作增强
-- [ ] 自定义工作流
-- [ ] 插件系统
+### v1.1.0（规划中）
+- [ ] 完整的 Git 操作覆盖（含更多快捷指令与 QuickPick 动作）
+- [ ] AI 辅助冲突解决
+- [ ] 团队协作增强（协作模板、权限提示）
+- [ ] 自定义工作流 / 仪表盘插件化
+- [ ] 自动化性能报表导出
 
 ## 🤝 参与贡献
 
@@ -363,9 +384,9 @@ npm run compile
 
 ## 📞 获取帮助
 
-- 📖 [文档中心](https://github.com/yourusername/git-assistant/wiki)
-- 💬 [讨论区](https://github.com/yourusername/git-assistant/discussions)
-- 🐛 [问题追踪](https://github.com/yourusername/git-assistant/issues)
+- 📖 [文档中心](https://github.com/YIXUAN-oss/CodeGitAssistant/wiki)
+- 💬 [讨论区](https://github.com/YIXUAN-oss/CodeGitAssistant/discussions)
+- 🐛 [问题追踪](https://github.com/YIXUAN-oss/CodeGitAssistant/issues)
 - 📧 邮件支持: support@gitassistant.com
 
 ## 📄 许可证

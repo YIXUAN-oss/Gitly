@@ -6,7 +6,7 @@
 
 **强大的Git可视化管理工具，让Git操作更简单、更高效！**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/YIXUAN-oss/CodeGitAssistant/releases/tag/v1.0.0)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/YIXUAN-oss/CodeGitAssistant/releases/tag/v1.0.1)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![VS Code](https://img.shields.io/badge/VS%20Code-1.80%2B-007ACC.svg)](https://code.visualstudio.com/)
 
@@ -14,8 +14,8 @@
 
 ## 📌 项目速览
 
-- **版本**：v1.0.0（VS Code 1.80+，Node.js 16+，Git 2.0+）
-- **状态**：🟢 活跃开发中 · 最后一次更新 2025-11-26
+- **版本**：v1.0.1（VS Code 1.80+，Node.js 16+，Git 2.0+）
+- **状态**：🟢 活跃开发中 · 最后一次更新 2025-12-03
 - **核心能力**：快捷 Git 操作 · 可视化控制面板 · 分支/远程/标签管理 · 冲突检测
 - **技术栈**：TypeScript + VS Code Extension API + React 18 + D3.js + simple-git
 - **性能指标**：激活 < 500ms · 控制面板基础数据刷新 < 400ms · 大仓库统计数据 < 1.5s
@@ -87,7 +87,7 @@
 3. 搜索 "Git Assistant - 增强版Git工具"
 4. 点击"安装"
 
-> 如果你已经下载了 `git-assistant-1.0.0.vsix`（例如从 GitHub Releases 或本仓库根目录），也可以在扩展视图右上角选择 **"从 VSIX 安装..."**，直接选择该文件完成安装。
+> 如果你已经下载了 `git-assistant-1.0.1.vsix`（例如从 GitHub Releases 或本仓库根目录），也可以在扩展视图右上角选择 **"从 VSIX 安装..."**，直接选择该文件完成安装。
 
 ### 从源码安装
 ```bash
@@ -183,7 +183,10 @@ npm run package
   "git-assistant.maxHistoryCount": 100,
 
   // 启用冲突高亮显示
-  "git-assistant.conflictHighlight": true
+  "git-assistant.conflictHighlight": true,
+
+  // 快速推送/拉取时优先使用的远程（留空则自动选择）
+  "git-assistant.defaultRemote": "origin"
 }
 ```
 
@@ -229,45 +232,50 @@ npm run package
 
 ```
 git-assistant/
+├── docs/                        # 开发/快速开始/测试文档
+│   ├── DEVELOPMENT.md
+│   ├── QUICKSTART.md
+│   └── TESTING.md
+├── dist/                        # Webpack 产物（extension + webview）
+├── resources/                   # 扩展图标与截图
 ├── src/
-│   ├── extension.ts              # 扩展入口
-│   ├── commands/                 # 命令处理器
-│   │   ├── git-operations.ts    # Git基础操作
+│   ├── extension.ts             # 扩展入口
+│   ├── commands/
+│   │   ├── index.ts             # 命令注册中心
+│   │   ├── git-operations.ts    # Push/Pull/Clone
 │   │   ├── branch-manager.ts    # 分支管理
 │   │   ├── conflict-resolver.ts # 冲突解决
-│   │   ├── repository-init.ts   # 仓库初始化与远程配置
-│   │   └── tag-manager.ts       # 标签管理（创建/推送/删除标签）
-│   ├── providers/               # 数据提供者
+│   │   ├── repository-init.ts   # 初始化与远程配置
+│   │   └── tag-manager.ts       # 标签管理
+│   ├── providers/               # TreeDataProvider
 │   │   ├── branch-provider.ts
 │   │   ├── history-provider.ts
 │   │   └── conflict-provider.ts
-│   ├── services/                # 业务逻辑
-│   │   └── git-service.ts
-│   ├── webview/                 # 可视化界面
-│   │   ├── components/          # React组件
-│   │   │   ├── App.tsx          # 主应用组件
-│   │   │   ├── CommandHistory.tsx # 快捷指令历史
-│   │   │   ├── GitCommandReference.tsx # Git 命令速查
-│   │   │   ├── BranchTree.tsx     # 分支树
-│   │   │   ├── RemoteManager.tsx  # 远程仓库管理
-│   │   │   ├── TagManager.tsx     # 标签管理
-│   │   │   ├── BranchGraph.tsx   # 分支视图
-│   │   │   ├── CommitGraph.tsx    # 2D提交图谱（高DPI优化）
-│   │   │   ├── CommitGraph3D.tsx  # 3D提交图谱（实验保留）
-│   │   │   ├── TimelineView.tsx   # 时间线视图
-│   │   │   ├── HeatmapAnalysis.tsx # 热力图分析（主题适配）
-│   │   │   └── ConflictEditor.tsx # 冲突编辑器
-│   │   └── dashboard-panel.ts
-│   ├── utils/                   # 工具函数
+│   ├── services/
+│   │   └── git-service.ts       # simple-git 封装
+│   ├── types/
+│   │   └── git.ts
+│   ├── utils/
+│   │   ├── command-history.ts
+│   │   ├── constants.ts
 │   │   ├── git-utils.ts
 │   │   ├── logger.ts
-│   │   ├── notification.ts
-│   │   ├── command-history.ts
-│   │   └── merge-history.ts
-│   └── types/                   # 类型定义
-├── resources/                   # 资源文件
+│   │   ├── merge-history.ts
+│   │   └── notification.ts
+│   └── webview/
+│       ├── components/          # React 10 标签页
+│       ├── dashboard-panel.ts   # VS Code Webview 容器
+│       ├── index.tsx            # Webview 入口
+│       ├── globals.d.ts
+│       ├── tsconfig.json
+│       └── utils/
+│           ├── theme.ts
+│           └── url.ts
 ├── package.json
-└── README.md
+├── README.md
+├── README_CN.md
+├── tsconfig.json
+└── webpack.config.js
 ```
 
 ## 🔄 数据流架构
@@ -305,7 +313,7 @@ VS Code UI（侧边栏 + 控制面板）
 
 ## 🗺️ 路线图
 
-- **v1.0.1**：完整 Git 操作覆盖、AI 冲突辅助、团队协作增强、自定义工作流、插件系统
+- **v1.1.0（规划中）**：AI 辅助冲突解决、协作工作流模板、插件化扩展点、自定义指令集、性能报表导出
 
 ## 🔧 开发指南
 
@@ -354,6 +362,12 @@ npm run package
 
 ## 📝 更新日志
 
+### v1.0.1 (2025-12-03)
+- 🗂️ README/README_CN/PROJECT_OVERVIEW/PROJECT_DETAILS/QUICK_REFERENCE 等文档全面同步最新目录结构与数据流
+- ⚙️ 配置说明补充 `git-assistant.defaultRemote`，快速推送/拉取可记忆默认远程
+- 🧭 控制面板与命令列表文案对齐当前 10 个标签页和 QuickPick 快捷操作
+- 📦 VSIX、发布脚本、测试用标签/示例文件命名更新为 1.0.1
+
 ### v1.0.0 (2025-11-26)
 - 🎉 初代正式版发布
 - ✨ 实现基础 Git 操作（Push/Pull/Clone/Add/Commit）
@@ -381,8 +395,8 @@ npm run package
 
 ## 📮 联系方式
 
-- 问题反馈：[GitHub Issues](https://github.com/yourusername/git-assistant/issues)
-- 功能建议：[GitHub Discussions](https://github.com/yourusername/git-assistant/discussions)
+- 问题反馈：[GitHub Issues](https://github.com/YIXUAN-oss/CodeGitAssistant/issues)
+- 功能建议：[GitHub Discussions](https://github.com/YIXUAN-oss/CodeGitAssistant/discussions)
 - 邮箱：byyi.xuan@outlook.com
 
 ---
@@ -391,7 +405,7 @@ npm run package
 
 **如果这个项目对你有帮助，请给个⭐️！**
 
-Made with ❤️ by [Your Name]
+Made with ❤️ by Yixuan
 
 </div>
 

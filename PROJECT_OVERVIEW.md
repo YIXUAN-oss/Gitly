@@ -7,7 +7,7 @@
 - **核心功能**: Git 可视化管理（分支/远程/标签/冲突/历史）
 - **代码行数**: 约 4000+ 行
 - **文件数量**: 35+ 个
-- **开发周期**: v1.0.0（初代正式版，活跃迭代中）
+- **开发周期**: v1.0.1（正式版维护中）
 - **最低 VS Code**: 1.80+
 - **最低 Node.js**: 16+
 
@@ -268,7 +268,7 @@ VS Code UI（侧边栏 + 控制面板 + 通知）
   "react-dom": "^18.2.0",         // React DOM
   "d3": "^7.8.5",                 // 数据可视化（2D图谱、热力图等）
   "d3-force": "^3.0.0",           // 力导向布局
-  "three": "^0.158.0",            // 3D提交图谱渲染
+  "three": "^0.170.0",            // 3D提交图谱渲染
   "@react-three/fiber": "^8.15.11", // React + Three.js 绑定
   "@react-three/drei": "^9.88.13" // Three.js 实用组件
 }
@@ -382,12 +382,12 @@ vsce publish        # 发布
 
 ## 🎯 后续规划
 
-### v1.0.1
-- [ ] 完整 Git 操作覆盖
+### v1.1.0（规划中）
+- [ ] 完整 Git 操作覆盖（更多快捷指令/QuickPick 工作流）
 - [ ] AI 辅助冲突解决
-- [ ] 团队协作增强
-- [ ] 自定义工作流
-- [ ] 插件系统
+- [ ] 团队协作增强（协作模板、权限提示）
+- [ ] 自定义工作流 / 插件系统
+- [ ] 性能与报表导出
 
 ## 🤝 贡献统计
 
@@ -397,9 +397,9 @@ vsce publish        # 发布
 
 ## 📞 支持渠道
 
-- 📖 文档: [Wiki](https://github.com/yourusername/git-assistant/wiki)
-- 💬 讨论: [Discussions](https://github.com/yourusername/git-assistant/discussions)
-- 🐛 问题: [Issues](https://github.com/yourusername/git-assistant/issues)
+- 📖 文档: [Wiki](https://github.com/YIXUAN-oss/CodeGitAssistant/wiki)
+- 💬 讨论: [Discussions](https://github.com/YIXUAN-oss/CodeGitAssistant/discussions)
+- 🐛 问题: [Issues](https://github.com/YIXUAN-oss/CodeGitAssistant/issues)
 - 📧 邮件: support@gitassistant.com
 
 ---

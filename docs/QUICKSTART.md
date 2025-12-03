@@ -2,7 +2,7 @@
 
 本指南将帮助您快速上手 Git Assistant 扩展的开发和使用。
 
-> **当前版本**：v1.0.0 | **最后更新**：2025-11-26
+> **当前版本**：v1.0.1 | **最后更新**：2025-12-03
 
 ## 🚀 5 分钟快速开始
 
@@ -149,7 +149,7 @@ npm install -g @vscode/vsce
 # 打包
 vsce package
 
-# 生成 git-assistant-1.0.0.vsix
+# 生成 git-assistant-1.0.1.vsix
 ```
 
 ### 本地安装测试
@@ -194,14 +194,14 @@ vsce publish
 现在您已经了解了基础知识，可以：
 
 1. 📖 阅读 [开发文档](DEVELOPMENT.md) 了解更多细节
-2. 🐛 在 [Issues](https://github.com/yourusername/git-assistant/issues) 中查找待解决的问题
-3. 💡 在 [Discussions](https://github.com/yourusername/git-assistant/discussions) 中分享想法
+2. 🐛 在 [Issues](https://github.com/YIXUAN-oss/CodeGitAssistant/issues) 中查找待解决的问题
+3. 💡 在 [Discussions](https://github.com/YIXUAN-oss/CodeGitAssistant/discussions) 中分享想法
 4. 🤝 提交您的第一个 Pull Request
 
 ## ❓ 遇到问题？
 
 - 查看 [`GETTING_STARTED.md`](../GETTING_STARTED.md) 的常见问题章节
-- 在 [Discussions](https://github.com/yourusername/git-assistant/discussions) 提问
-- 提交 [Issue](https://github.com/yourusername/git-assistant/issues)
+- 在 [Discussions](https://github.com/YIXUAN-oss/CodeGitAssistant/discussions) 提问
+- 提交 [Issue](https://github.com/YIXUAN-oss/CodeGitAssistant/issues)
 
 祝开发愉快！🎉

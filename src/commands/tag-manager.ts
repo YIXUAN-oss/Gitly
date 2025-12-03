@@ -18,7 +18,7 @@ export function registerTagManager(
             try {
                 tagName = await vscode.window.showInputBox({
                     prompt: '输入标签名称',
-                    placeHolder: 'v1.0.0',
+                    placeHolder: 'v1.0.1',
                     validateInput: (value) => {
                         if (!value) {
                             return '标签名称不能为空';

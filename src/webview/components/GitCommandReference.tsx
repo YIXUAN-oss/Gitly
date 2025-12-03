@@ -102,7 +102,7 @@ export const GitCommandReference: React.FC = () => {
             commands: [
                 { id: 'tag-list', command: 'git tag', description: '查看所有标签' },
                 { id: 'tag-create', command: 'git tag <name>', description: '创建轻量级标签', example: 'git tag v1.0.0' },
-                { id: 'tag-annotated', command: 'git tag -a <name> -m "message"', description: '创建带注释的标签', example: 'git tag -a v1.0.0 -m "版本 1.0.0"' },
+                { id: 'tag-annotated', command: 'git tag -a <name> -m "message"', description: '创建带注释的标签', example: 'git tag -a v1.0.1 -m "版本 1.0.0"' },
                 { id: 'tag-push', command: 'git push origin <tag>', description: '推送单个标签', example: 'git push origin v1.0.0' },
                 { id: 'tag-push-all', command: 'git push --tags', description: '推送所有标签到远程' },
                 { id: 'tag-delete', command: 'git tag -d <name>', description: '删除本地标签', example: 'git tag -d v1.0.0' },

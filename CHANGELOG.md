@@ -4,6 +4,15 @@
 
 ---
 
+## [1.0.1] - 2025-12-03
+
+> ♻️ **文档与配置同步**，确保 v1.0.1 版本的信息、目录结构与 VSIX 包一致。
+
+### 更新 ✅
+- README / README_CN / PROJECT_OVERVIEW / PROJECT_DETAILS / QUICK_REFERENCE / docs/* 文档同步最新项目结构、依赖与数据流
+- 新增并强调 `git-assistant.defaultRemote` 配置，快速推送/拉取可记忆默认远程仓库
+
+
 ## [1.0.0] - 2025-11-26
 
 > 🎉 **初代正式版发布！** 包含完整的 Git 可视化管理能力，涵盖分支/远程/标签/冲突/历史等核心场景。
@@ -160,4 +169,4 @@
 
 ---
 
-更多信息请访问：[GitHub Releases](https://github.com/yourusername/git-assistant/releases)
+更多信息请访问：[GitHub Releases](https://github.com/YIXUAN-oss/CodeGitAssistant/releases)
