@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CommitGraph } from './CommitGraph';
 import { HeatmapAnalysis } from './HeatmapAnalysis';
 import { BranchGraph } from './BranchGraph';
+import { GitGraphView } from './GitGraphView';
 import { TimelineView } from './TimelineView';
 import { BranchTree } from './BranchTree';
 import { TagManager } from './TagManager';
@@ -15,9 +16,27 @@ import './App.css';
  * 主应用组件
  */
 export const App: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'graph' | 'heatmap' | 'branch-graph' | 'timeline' | 'branches' | 'tags' | 'remotes' | 'conflicts' | 'commands' | 'command-ref'>('commands');
+    // 从持久化状态中恢复上次的标签页，如果没有则使用默认值
+    const getInitialTab = (): 'graph' | 'heatmap' | 'branch-graph' | 'git-graph' | 'timeline' | 'branches' | 'tags' | 'remotes' | 'conflicts' | 'commands' | 'command-ref' => {
+        const savedState = vscode.getState();
+        if (savedState?.activeTab) {
+            return savedState.activeTab;
+        }
+        return 'commands';
+    };
+
+    const [activeTab, setActiveTab] = useState<'graph' | 'heatmap' | 'branch-graph' | 'git-graph' | 'timeline' | 'branches' | 'tags' | 'remotes' | 'conflicts' | 'commands' | 'command-ref'>(getInitialTab());
     const [gitData, setGitData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
+
+    // 保存标签页状态到持久化存储
+    useEffect(() => {
+        const currentState = vscode.getState() || {};
+        vscode.setState({
+            ...currentState,
+            activeTab
+        });
+    }, [activeTab]);
 
     useEffect(() => {
         // 接收来自扩展的消息
@@ -108,6 +127,12 @@ export const App: React.FC = () => {
                         🌳 分支视图
                     </button>
                     <button
+                        className={activeTab === 'git-graph' ? 'active' : ''}
+                        onClick={() => setActiveTab('git-graph')}
+                    >
+                        📋 GitGraph
+                    </button>
+                    <button
                         className={activeTab === 'conflicts' ? 'active' : ''}
                         onClick={() => setActiveTab('conflicts')}
                     >
@@ -147,6 +172,7 @@ export const App: React.FC = () => {
                         {activeTab === 'graph' && <CommitGraph data={gitData} />}
                         {activeTab === 'heatmap' && <HeatmapAnalysis data={gitData} />}
                         {activeTab === 'branch-graph' && <BranchGraph data={gitData} />}
+                        {activeTab === 'git-graph' && <GitGraphView data={gitData} />}
                         {activeTab === 'timeline' && <TimelineView data={gitData} />}
                         {activeTab === 'branches' && <BranchTree data={gitData} />}
                         {activeTab === 'remotes' && <RemoteManager data={gitData} />}

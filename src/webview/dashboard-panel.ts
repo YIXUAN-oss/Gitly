@@ -13,6 +13,7 @@ interface WebviewMessage {
     command: string;
     commandId?: string;
     branch?: string;
+    branchName?: string;
     isCurrent?: boolean;
     tagName?: string;
     remoteName?: string;
@@ -21,6 +22,9 @@ interface WebviewMessage {
     action?: 'current' | 'incoming' | 'both';
     text?: string;
     url?: string;
+    commitHash?: string;
+    x?: number;
+    y?: number;
     [key: string]: unknown;
 }
 
@@ -35,6 +39,7 @@ export class DashboardPanel {
     private readonly _extensionUri: vscode.Uri;
     private _disposables: vscode.Disposable[] = [];
     private _disposed = false;
+    private _isInitialized = false; // 标记是否已初始化 HTML
 
     // 防抖刷新定时器
     private _refreshTimer: NodeJS.Timeout | null = null;
@@ -59,6 +64,7 @@ export class DashboardPanel {
             column || vscode.ViewColumn.One,
             {
                 enableScripts: true,
+                retainContextWhenHidden: true, // 保持上下文，避免切换时重新加载
                 localResourceRoots: [
                     vscode.Uri.joinPath(extensionUri, 'dist', 'webview')
                 ]
@@ -72,11 +78,23 @@ export class DashboardPanel {
         this._panel = panel;
         this._extensionUri = extensionUri;
 
-        // 设置HTML内容
+        // 设置HTML内容（仅在首次创建时）
         this._update();
 
         // 监听面板关闭事件
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+
+        // 监听面板可见性变化，只在变为可见时刷新数据（不重新加载 HTML）
+        this._panel.onDidChangeViewState(
+            async (e) => {
+                if (e.webviewPanel.visible && this._isInitialized) {
+                    // 面板变为可见且已初始化，只刷新数据，不重新设置 HTML
+                    await this._sendGitData();
+                }
+            },
+            null,
+            this._disposables
+        );
 
         // 处理来自webview的消息
         this._panel.webview.onDidReceiveMessage(
@@ -170,25 +188,25 @@ export class DashboardPanel {
                                 await vscode.commands.executeCommand('git-assistant.initRepository');
                                 // 等待一小段时间确保初始化完成
                                 await new Promise(resolve => setTimeout(resolve, 500));
-                                // 初始化成功后，重新检查仓库状态并刷新整个界面
-                                // 这会自动从初始化页面切换到主面板
-                                await this._update();
+                                // 初始化成功后，强制更新整个界面（从初始化页面切换到主面板）
+                                await this._update(true);
                             } catch (error) {
                                 // 如果初始化失败，刷新以显示错误状态
                                 const errorMessage = error instanceof Error ? error.message : String(error);
                                 vscode.window.showErrorMessage(`初始化失败: ${errorMessage}`);
-                                await this._update();
+                                await this._update(true);
                             }
                             break;
                         case 'cloneRepository':
                             try {
                                 await vscode.commands.executeCommand('git-assistant.cloneIntoWorkspace');
                                 await new Promise(resolve => setTimeout(resolve, 500));
-                                await this._update();
+                                // 克隆成功后，强制更新整个界面
+                                await this._update(true);
                             } catch (error) {
                                 const errorMessage = error instanceof Error ? error.message : String(error);
                                 vscode.window.showErrorMessage(`克隆失败: ${errorMessage}`);
-                                await this._update();
+                                await this._update(true);
                             }
                             break;
                         case 'addRemote':
@@ -222,6 +240,31 @@ export class DashboardPanel {
                         case 'openRemoteUrl':
                             if (message.url) {
                                 await this._openRemoteUrl(message.url);
+                            }
+                            break;
+                        case 'showCommitContextMenu':
+                            if (message.commitHash) {
+                                await this._showCommitContextMenu(
+                                    message.commitHash as string,
+                                    0,
+                                    0
+                                );
+                            }
+                            break;
+                        case 'checkoutBranch':
+                            if (message.branchName && typeof message.branchName === 'string') {
+                                await this._handleCheckoutBranch(message.branchName as string);
+                            }
+                            break;
+                        case 'showBranchContextMenu':
+                            if (message.branchName && typeof message.branchName === 'string' &&
+                                typeof message.x === 'number' && typeof message.y === 'number') {
+                                await this._showBranchContextMenu(
+                                    message.branchName as string,
+                                    message.commitHash as string | undefined,
+                                    message.x as number,
+                                    message.y as number
+                                );
                             }
                             break;
                         default:
@@ -300,6 +343,136 @@ export class DashboardPanel {
             const errorMessage = error instanceof Error ? error.message : String(error);
             vscode.window.showErrorMessage(`切换分支失败: ${errorMessage}`);
             await this._sendGitData();
+        }
+    }
+
+    /**
+     * 处理检出分支（双击分支标签时调用）
+     */
+    private async _handleCheckoutBranch(branchName: string) {
+        try {
+            if (!branchName) {
+                vscode.window.showErrorMessage('分支名称不能为空');
+                return;
+            }
+
+            // 获取当前分支
+            const branches = await this.gitService.getBranches();
+            const currentBranch = branches.current;
+
+            if (branchName === currentBranch) {
+                vscode.window.showInformationMessage(`已经在分支 "${branchName}"`);
+                return;
+            }
+
+            // 检查未提交的更改
+            const status = await this.gitService.getStatus();
+            if (status.modified.length > 0 || status.created.length > 0 || status.deleted.length > 0) {
+                const choice = await vscode.window.showWarningMessage(
+                    `有未提交的更改，是否暂存(stash)后再切换到分支 "${branchName}"？`,
+                    '暂存并切换',
+                    '放弃更改并切换',
+                    '取消'
+                );
+
+                if (choice === '取消' || !choice) {
+                    return;
+                }
+
+                if (choice === '暂存并切换') {
+                    await this.gitService.stash();
+                    vscode.window.showInformationMessage('✅ 更改已暂存');
+                }
+            }
+
+            await this.gitService.checkout(branchName);
+            vscode.window.showInformationMessage(`✅ 已切换到分支 "${branchName}"`);
+            await this._sendGitData();
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            vscode.window.showErrorMessage(`检出分支失败: ${errorMessage}`);
+            await this._sendGitData();
+        }
+    }
+
+    /**
+     * 显示分支上下文菜单（右键分支标签时调用）
+     */
+    private async _showBranchContextMenu(
+        branchName: string,
+        commitHash: string | undefined,
+        x: number,
+        y: number
+    ) {
+        try {
+            const branches = await this.gitService.getBranches();
+            const currentBranch = branches.current;
+            const isCurrent = branchName === currentBranch;
+
+            const actions = [
+                {
+                    label: '检出分支',
+                    action: 'checkout',
+                    visible: !isCurrent
+                },
+                {
+                    label: '重命名分支...',
+                    action: 'rename',
+                    visible: true
+                },
+                {
+                    label: '删除分支...',
+                    action: 'delete',
+                    visible: !isCurrent
+                },
+                {
+                    label: '合并到当前分支...',
+                    action: 'merge',
+                    visible: !isCurrent && currentBranch !== null
+                },
+                {
+                    label: '复制分支名称',
+                    action: 'copyName',
+                    visible: true
+                }
+            ].filter(item => item.visible);
+
+            const picked = await vscode.window.showQuickPick(
+                actions.map(item => ({
+                    label: item.label,
+                    action: item.action
+                })),
+                {
+                    placeHolder: `分支 "${branchName}"`,
+                    ignoreFocusOut: false  // 允许点击外部区域关闭菜单
+                }
+            );
+
+            if (!picked) return;
+
+            switch (picked.action) {
+                case 'checkout':
+                    await this._handleCheckoutBranch(branchName);
+                    break;
+                case 'rename':
+                    await vscode.commands.executeCommand('git-assistant.renameBranch', branchName);
+                    await this._sendGitData();
+                    break;
+                case 'delete':
+                    await vscode.commands.executeCommand('git-assistant.deleteBranch', branchName);
+                    await this._sendGitData();
+                    break;
+                case 'merge':
+                    await this._handleMergeBranch(branchName);
+                    break;
+                case 'copyName':
+                    await vscode.env.clipboard.writeText(branchName);
+                    vscode.window.showInformationMessage(`✅ 已复制分支名称 "${branchName}"`);
+                    break;
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            vscode.window.showErrorMessage(`显示分支菜单失败: ${errorMessage}`);
         }
     }
 
@@ -763,6 +936,8 @@ export class DashboardPanel {
             this._refreshTimer = null;
         }
 
+        // 重置初始化标志
+        this._isInitialized = false;
         DashboardPanel.currentPanel = undefined;
 
         this._panel.dispose();
@@ -775,23 +950,39 @@ export class DashboardPanel {
         }
     }
 
-    private async _update() {
+    private async _update(forceUpdate: boolean = false) {
         const webview = this._panel.webview;
 
         try {
             // 检查是否是Git仓库
             const isRepo = await this.gitService.isRepository();
 
+            // 如果已经初始化过且不是强制更新，检查仓库状态是否变化
+            if (this._isInitialized && !forceUpdate) {
+                // 检查当前 HTML 是否与仓库状态匹配
+                const currentHtml = this._panel.webview.html;
+                const shouldShowInit = !isRepo;
+                const isShowingInit = currentHtml.includes('欢迎使用 Git Assistant') || currentHtml.includes('尚未初始化为Git仓库');
+
+                // 如果状态匹配，跳过更新
+                if ((shouldShowInit && isShowingInit) || (!shouldShowInit && !isShowingInit)) {
+                    return;
+                }
+            }
+
             if (!isRepo) {
                 // 显示初始化界面
                 this._panel.webview.html = this._getInitHtml();
+                this._isInitialized = true;
                 return;
             }
 
             // 使用 React 应用。数据加载交给前端通过消息触发，避免重复加载。
             this._panel.webview.html = this._getReactHtml(webview);
+            this._isInitialized = true;
         } catch (error) {
             this._panel.webview.html = this._getErrorHtml(String(error));
+            this._isInitialized = true;
         }
     }
 
@@ -824,8 +1015,9 @@ export class DashboardPanel {
             ] = await Promise.allSettled([
                 this.gitService.getStatus(),
                 this.gitService.getBranches(),
-                // 初始加载使用较小的提交数量以提升加载速度
-                this.gitService.getLog(50),
+                // 初始加载使用足够的提交数量，确保与分支图数据对齐，避免出现"无提交信息"
+                // 使用 800 个提交，与 BRANCH_GRAPH_MAX_COMMITS 保持一致
+                this.gitService.getLog(800),
                 this.gitService.getRemotes(),
                 this.gitService.getConflicts(),
                 this.gitService.getTags()
@@ -879,14 +1071,19 @@ export class DashboardPanel {
                         fileStatsResult,
                         contributorStatsResult,
                         timelineResult,
-                        branchGraphResult
+                        branchGraphResult,
+                        // 强制刷新更完整的提交日志，确保与最新分支图对齐（避免出现“无提交信息”）
+                        logRefreshResult
                     ] = await Promise.allSettled([
                         // 缩短统计时间范围，减轻大仓库压力
                         this.gitService.getFileStats(180),
                         this.gitService.getContributorStats(180),
                         this.gitService.getCommitTimeline(180),
                         // 分支图放在最后加载（计算成本最高）
-                        this.gitService.getBranchGraph() // 使用缓存
+                        this.gitService.getBranchGraph(), // 使用缓存
+                        // 获取更大的提交窗口并强制刷新，确保包含最新提交信息
+                        // 使用 800 个提交，确保与分支图的最大提交数一致，避免出现"无提交信息"
+                        this.gitService.getLog(800, undefined, true)
                     ]);
 
                     if (this._disposed) {
@@ -906,6 +1103,7 @@ export class DashboardPanel {
                         contributorStatsResult,
                         branchGraphResult,
                         timelineResult,
+                        logRefreshResult,
                         status,
                         branches,
                         log,
@@ -1105,6 +1303,7 @@ export class DashboardPanel {
         contributorStatsResult: PromiseSettledResult<Map<string, { commits: number; files: Set<string> }>>;
         branchGraphResult: PromiseSettledResult<any>;
         timelineResult: PromiseSettledResult<Map<string, number>>;
+        logRefreshResult: PromiseSettledResult<any>;
         status: any;
         branches: any;
         log: any;
@@ -1151,6 +1350,11 @@ export class DashboardPanel {
             }))
             : [];
 
+        // 如果后台刷新日志成功，使用最新日志；否则保持原有数据
+        const resolvedLog = results.logRefreshResult.status === 'fulfilled'
+            ? results.logRefreshResult.value
+            : results.log;
+
         // 获取远程标签并发送更新
         if (results.remotes.length > 0) {
             this.gitService.getRemoteTags(results.remotes[0]?.name || 'origin').then(tags => {
@@ -1172,6 +1376,7 @@ export class DashboardPanel {
                             }
                         },
                         timeline,
+                        log: resolvedLog,
                         remoteTags: tags
                     }
                 });
@@ -1194,6 +1399,7 @@ export class DashboardPanel {
                             }
                         },
                         timeline,
+                        log: resolvedLog,
                         remoteTags: []
                     }
                 });
@@ -1217,6 +1423,7 @@ export class DashboardPanel {
                         }
                     },
                     timeline,
+                    log: resolvedLog,
                     remoteTags: []
                 }
             });
@@ -1551,6 +1758,192 @@ export class DashboardPanel {
     private async _pickRemote(actionLabel: string): Promise<string | null> {
         const { pickRemote } = await import('../utils/git-helpers');
         return pickRemote(this.gitService, actionLabel);
+    }
+
+    /**
+     * 显示提交上下文菜单
+     */
+    private async _showCommitContextMenu(commitHash: string, _x: number, _y: number) {
+        try {
+            const menuItems = [
+                {
+                    label: '检出此提交',
+                    description: `checkout ${commitHash.substring(0, 8)}`,
+                    action: 'checkout'
+                },
+                {
+                    label: '从此提交创建分支',
+                    description: '创建新分支',
+                    action: 'createBranch'
+                },
+                {
+                    label: '创建标签',
+                    description: '为此提交打标签',
+                    action: 'createTag'
+                },
+                {
+                    label: '复制提交哈希',
+                    description: commitHash,
+                    action: 'copyHash'
+                },
+                {
+                    label: '回滚提交',
+                    description: 'Revert this commit',
+                    action: 'revert'
+                },
+                {
+                    label: '拣选提交',
+                    description: 'Cherry-pick this commit',
+                    action: 'cherryPick'
+                }
+            ];
+
+            const picked = await vscode.window.showQuickPick(menuItems, {
+                placeHolder: `提交 ${commitHash.substring(0, 8)}`,
+                ignoreFocusOut: false  // 允许点击外部区域关闭菜单
+            });
+
+            if (!picked) return;
+
+            switch (picked.action) {
+                case 'checkout':
+                    await this._checkoutCommit(commitHash);
+                    break;
+                case 'createBranch':
+                    await this._createBranchFromCommit(commitHash);
+                    break;
+                case 'createTag':
+                    await vscode.commands.executeCommand('git-assistant.createTag', commitHash);
+                    break;
+                case 'copyHash':
+                    await vscode.env.clipboard.writeText(commitHash);
+                    vscode.window.showInformationMessage(`已复制: ${commitHash}`);
+                    break;
+                case 'revert':
+                    await this._revertCommit(commitHash);
+                    break;
+                case 'cherryPick':
+                    await this._cherryPickCommit(commitHash);
+                    break;
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            vscode.window.showErrorMessage(`操作失败: ${errorMessage}`);
+        }
+    }
+
+
+    /**
+     * 检出提交
+     */
+    private async _checkoutCommit(commitHash: string) {
+        try {
+            const status = await this.gitService.getStatus();
+            if (status.modified.length > 0 || status.created.length > 0) {
+                const choice = await vscode.window.showWarningMessage(
+                    '有未提交的更改，是否暂存(stash)？',
+                    '暂存并检出',
+                    '放弃更改并检出',
+                    '取消'
+                );
+
+                if (choice === '取消' || !choice) {
+                    return;
+                }
+
+                if (choice === '暂存并检出') {
+                    await this.gitService.stash();
+                }
+            }
+
+            await this.gitService.checkout(commitHash);
+            vscode.window.showInformationMessage(`✅ 已检出提交 ${commitHash.substring(0, 8)}`);
+            await this._sendGitData();
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            vscode.window.showErrorMessage(`检出失败: ${errorMessage}`);
+        }
+    }
+
+    /**
+     * 从提交创建分支
+     */
+    private async _createBranchFromCommit(commitHash: string) {
+        try {
+            const branchName = await vscode.window.showInputBox({
+                prompt: '输入新分支名称',
+                placeHolder: 'feature/new-branch',
+                validateInput: (value: string) => {
+                    if (!value) {
+                        return '分支名称不能为空';
+                    }
+                    if (!/^[a-zA-Z0-9_\-/]+$/.test(value)) {
+                        return '分支名称只能包含字母、数字、下划线、横线和斜线';
+                    }
+                    return null;
+                }
+            });
+
+            if (!branchName) {
+                return;
+            }
+
+            // createBranch 方法签名: createBranch(name: string, checkout: boolean, startPoint?: string)
+            await this.gitService.createBranch(branchName, false, commitHash);
+            vscode.window.showInformationMessage(`✅ 已从提交 ${commitHash.substring(0, 8)} 创建分支 "${branchName}"`);
+            await this._sendGitData();
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            vscode.window.showErrorMessage(`创建分支失败: ${errorMessage}`);
+        }
+    }
+
+    /**
+     * 回滚提交
+     */
+    private async _revertCommit(commitHash: string) {
+        try {
+            const confirm = await vscode.window.showWarningMessage(
+                `确定要回滚提交 ${commitHash.substring(0, 8)} 吗？`,
+                { modal: true },
+                '回滚'
+            );
+
+            if (confirm !== '回滚') {
+                return;
+            }
+
+            await this.gitService.revert(commitHash);
+            vscode.window.showInformationMessage(`✅ 已回滚提交 ${commitHash.substring(0, 8)}`);
+            await this._sendGitData();
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            vscode.window.showErrorMessage(`回滚失败: ${errorMessage}`);
+        }
+    }
+
+    /**
+     * 拣选提交
+     */
+    private async _cherryPickCommit(commitHash: string) {
+        try {
+            const confirm = await vscode.window.showWarningMessage(
+                `确定要拣选提交 ${commitHash.substring(0, 8)} 到当前分支吗？`,
+                { modal: true },
+                '拣选'
+            );
+
+            if (confirm !== '拣选') {
+                return;
+            }
+
+            await this.gitService.cherryPick(commitHash);
+            vscode.window.showInformationMessage(`✅ 已拣选提交 ${commitHash.substring(0, 8)}`);
+            await this._sendGitData();
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            vscode.window.showErrorMessage(`拣选失败: ${errorMessage}`);
+        }
     }
 
     private _getReactHtml(webview: vscode.Webview): string {

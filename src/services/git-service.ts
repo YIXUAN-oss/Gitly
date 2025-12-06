@@ -621,13 +621,18 @@ export class GitService {
     /**
      * 创建分支
      */
-    async createBranch(branchName: string, checkout: boolean = false): Promise<void> {
+    async createBranch(branchName: string, checkout: boolean = false, startPoint?: string): Promise<void> {
         const git = this.ensureGit();
         // 在创建新分支前，先记录当前分支
         const status = await this.getStatus(true); // 强制刷新状态
         const previousBranch = status.current;
 
-        await git.checkoutLocalBranch(branchName);
+        if (startPoint) {
+            // 从指定提交创建分支
+            await git.raw(['checkout', '-b', branchName, startPoint]);
+        } else {
+            await git.checkoutLocalBranch(branchName);
+        }
 
         // 清除相关缓存
         this.invalidateCache('branches');
@@ -959,11 +964,14 @@ export class GitService {
 
     /**
      * 获取提交历史（带缓存）
+     * @param maxCount 最大提交数量
+     * @param commitHash 可选：指定提交哈希，只返回该提交
+     * @param forceRefresh 是否强制刷新
      */
-    async getLog(maxCount: number = 100, forceRefresh: boolean = false): Promise<LogResult> {
-        const cacheKey = `log:${maxCount}`;
+    async getLog(maxCount: number = 100, commitHash?: string, forceRefresh: boolean = false): Promise<LogResult> {
+        const cacheKey = `log:${maxCount}:${commitHash || 'all'}`;
 
-        if (!forceRefresh) {
+        if (!forceRefresh && !commitHash) {
             const cached = this.getCached<LogResult>(cacheKey);
             if (cached) {
                 return cached;
@@ -971,9 +979,20 @@ export class GitService {
         }
 
         const git = this.ensureGit();
-        const result = await git.log({ maxCount });
-        this.setCache(cacheKey, result, this.CACHE_TTL.log);
-        return result;
+
+        if (commitHash) {
+            // 查询特定提交（直接指定提交哈希，避免范围错误导致总是返回最近提交）
+            // 部分 simple-git 版本的类型未暴露 options + customArgs 的 Promise 重载，这里做一次显式转换
+            const result = await (git.log as unknown as (options: any, customArgs?: string[]) => Promise<LogResult>)(
+                { maxCount: 1 },
+                [commitHash]
+            );
+            return result;
+        } else {
+            const result = await git.log({ maxCount });
+            this.setCache(cacheKey, result, this.CACHE_TTL.log);
+            return result;
+        }
     }
 
     /**
@@ -1617,6 +1636,29 @@ export class GitService {
 
         // 清除远程标签缓存（删除后远程标签列表已变化）
         this.invalidateCache(`remoteTags:${remote}`);
+    }
+
+    /**
+     * 回滚提交
+     */
+    async revert(commitHash: string): Promise<void> {
+        const git = this.ensureGit();
+        // 使用 raw 方法执行 git revert 命令（simple-git 的 revert 方法不接受数组参数）
+        await git.raw(['revert', '--no-edit', commitHash]);
+        // 清除相关缓存
+        this.invalidateCache('log');
+        this.invalidateCache('status');
+    }
+
+    /**
+     * 拣选提交
+     */
+    async cherryPick(commitHash: string): Promise<void> {
+        const git = this.ensureGit();
+        await git.raw(['cherry-pick', commitHash]);
+        // 清除相关缓存
+        this.invalidateCache('log');
+        this.invalidateCache('status');
     }
 }
 
