@@ -1,8 +1,67 @@
 # 更新日志
 
-本文档记录 Git Assistant 的所有重要变更。
+本文档记录 Gitly VS Code 扩展的所有重要变更。
 
 ---
+
+## [1.1.0] - 2025-12-19
+
+> 📚 **文档本地化与版本对齐**：将默认文档切换为简体中文，同时补充独立英文说明，并将扩展版本统一为 1.1.0。
+
+### 文档与本地化 📖
+
+- **默认 README 中文化**：
+  - `README.md` 现在为完整的简体中文版本，面向中文用户介绍 Gitly 的特性与使用方式。
+  - 保留 `README.zh-CN.md` 作为扩展阅读，两者内容在结构和信息上保持一致。
+- **新增英文说明文档**：
+  - 新增 `README_EN.md`，作为英文用户的入口文档，内容与中文 README 对齐。
+- **贡献与行为规范中文化**：
+  - `CONTRIBUTING.md` 重写为简体中文，覆盖提 Issue、提 PR、开发环境搭建与调试流程等。
+  - `CODE_OF_CONDUCT.md` 更新为基于 Contributor Covenant 1.4 的中文说明版本，并保留英文原文链接与说明，以英文为最终法律与解释依据。
+
+### 版本与历史说明 🔖
+
+- 将 VSIX 扩展版本号（`package.json` 中的 `version` 字段）统一调整为 **1.1.0**，与当前中文文档描述保持一致。
+- 在文档中明确说明：
+  - 早期变更记录主要继承自上游 Git Graph 项目；
+  - 从 **1.1.0** 起作为 Gitly 独立演进版本，后续新特性与修复会在该版本线继续记录。
+
+---
+
+## [1.0.2] - 2025-12-11
+
+> 🐛 **Git 图视图与提交详情体验优化**，并将所有文档与 VSIX 包版本同步至 1.0.2。
+
+### 功能与体验优化 ✨
+
+- **提交详情按需加载**：
+  - 为旧提交（特别是大仓库场景）增加按需补全提交详情（消息、作者等）的机制
+  - 首次加载控制面板时仅拉取必要数据，滚动浏览或点击提交时再增量请求详情
+  - 降低大仓库初次打开控制面板的等待时间
+- **添加Git 视图表**：
+  - 可以直观展现提交信息、合并关系
+  - 查看各个提交之间的差异
+  - 细化分支结构
+
+- **优化时间线：**
+  - 使其更加美观
+
+
+### Bug 修复 🐛
+
+- **当前提交指示器闪烁问题**：
+  - 修复在 Git 图视图中，通过右键 checkout 提交后，当前提交空心圆指示器在新旧提交之间来回闪烁的问题
+  - 优化 HEAD 与当前分支状态的检测逻辑，避免使用过期分支图缓存导致的状态回退
+
+- **提交详情滚动跳动问题**：
+  - 修复展开/折叠提交详情（尤其是 diff/详情区域高度变化）时的滚动位置跳动
+  - 改进滚动锚点计算方式，保证多次渲染后仍能稳定停留在用户关注的提交行
+
+### 文档与版本同步 📚
+
+- 将以下文档中的版本号、VSIX 文件名与发布日期统一更新为 **1.0.2 / 2025-12-11**：
+  - README.md / README_EN.md / CONTRIBUTING.md / CODE_OF_CONDUCT.md / CHANGELOG.md
+- 补充 1.0.2 版本在 README/README_EN 中的更新日志条目
 
 ## [1.0.1] - 2025-12-03
 
@@ -10,9 +69,8 @@
 
 ### 文档更新 📚
 
-- **全面文档同步**：
-  - README.md / README_CN.md / PROJECT_OVERVIEW.md / PROJECT_DETAILS.md / QUICK_REFERENCE.md 等核心文档同步最新项目结构、依赖与数据流
-  - docs/DEVELOPMENT.md / docs/QUICKSTART.md / docs/TESTING.md / docs/API.md 开发文档更新至 1.0.1
+- **核心文档同步**：
+  - README.md / README_EN.md / CONTRIBUTING.md / CODE_OF_CONDUCT.md 等核心文档同步最新项目结构与使用说明
   - 所有文档统一版本号、更新日期为 2025-12-03
   - 文档间引用链接和版本信息保持一致
 
@@ -24,12 +82,12 @@
 ### 配置增强 ⚙️
 
 - **新增配置选项**：
-  - `git-assistant.defaultRemote` - 快速推送/拉取等操作时优先使用的远程名称（留空则自动选择）
+  - 新增默认远程相关配置，用于在快速推送/拉取等操作时优先选择指定远程（留空则自动选择）
   - 支持在 VS Code 设置中配置，快速推送/拉取可记忆默认远程仓库
   - 与远程仓库管理面板联动，更新默认远程时自动同步配置
 
 - **配置文档更新**：
-  - 所有文档中的配置说明已包含 `defaultRemote` 选项
+  - 所有文档中的配置说明已包含默认远程相关选项
   - 开发文档中的配置读取示例已更新
 
 ### 代码质量改进 🔧
@@ -42,7 +100,7 @@
 
 - **统一日志系统**：
   - 新增 `Logger` 类，替换所有 `console.*` 调用
-  - 所有日志输出到 VS Code 的 "Git Assistant" 输出通道
+  - 所有日志输出到 VS Code 的 "Gitly" 输出通道
   - 支持调试模式，`debug` 方法仅在配置启用时输出
   - 自动添加时间戳和日志级别
 
@@ -141,7 +199,7 @@
 ### 构建与发布 📦
 
 - **版本标识更新**：
-  - VSIX 文件名更新为 `git-assistant-1.0.1.vsix`
+  - VSIX 文件名更新为 `gitly-1.0.1.vsix`
   - 发布脚本、测试用标签/示例文件命名统一更新为 1.0.1
   - package.json 版本号已更新
 
@@ -169,7 +227,7 @@
 从 v1.0.0 升级到 v1.0.1：
 
 1. **配置迁移**（可选）：
-   - 如果希望快速推送/拉取记住默认远程，可在 VS Code 设置中配置 `git-assistant.defaultRemote`
+   - 如果希望快速推送/拉取记住默认远程，可在 VS Code 设置中配置相应 Gitly 默认远程选项
    - 留空则自动选择，不影响现有使用习惯
 
 2. **功能兼容性**：
@@ -268,10 +326,10 @@
 - 状态栏入口
 
 #### 配置选项
-- `git-assistant.autoFetch` - 自动获取远程分支更新
-- `git-assistant.confirmPush` - 推送前确认
-- `git-assistant.maxHistoryCount` - 历史记录数量
-- `git-assistant.conflictHighlight` - 冲突高亮
+- 自动获取远程分支更新
+- 推送前确认
+- 历史记录数量
+- 冲突高亮
 
 ### 性能优化 🚀
 
@@ -302,16 +360,10 @@
 
 ### 文档 📝
 
-- README.md - 项目介绍
-- README_CN.md - 中文详细文档
-- QUICK_REFERENCE.md - 功能速查表
-- PROJECT_OVERVIEW.md - 架构概览
-- GETTING_STARTED.md - 快速上手
-- CHANGELOG.md - 更新日志
+- README.md / README_EN.md - 项目与功能说明
+- CHANGELOG.md - 更新日志（当前文件）
 - CONTRIBUTING.md - 贡献指南
-- docs/DEVELOPMENT.md - 开发文档
-- docs/QUICKSTART.md - 5 分钟入门
-- docs/TESTING.md - 测试指南
+- CODE_OF_CONDUCT.md - 行为准则
 
 ---
 
@@ -336,4 +388,4 @@
 
 ---
 
-更多信息请访问：[GitHub Releases](https://github.com/YIXUAN-oss/CodeGitAssistant/releases)
+更多信息请访问：[GitHub Releases](https://github.com/YIXUAN-oss/Gitly/releases)

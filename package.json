@@ -1,268 +1,1641 @@
 {
-    "name": "git-assistant",
-    "displayName": "Git Assistant - 增强版Git工具",
-    "description": "强大的Git可视化管理工具，支持快捷操作、分支管理、提交历史可视化和冲突解决",
-    "version": "1.0.1",
-    "publisher": "YIXUAN",
-    "icon": "resources/git-icon.png",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/YIXUAN-oss/CodeGitAssistant"
-    },
-    "engines": {
-        "vscode": "^1.80.0"
-    },
-    "categories": [
-        "SCM Providers",
-        "Visualization",
-        "Other"
-    ],
-    "keywords": [
-        "git",
-        "version control",
-        "source control",
-        "visualization",
-        "branch management"
-    ],
-    "activationEvents": [
-        "onCommand:git-assistant.quickPush",
-        "onCommand:git-assistant.quickPull",
-        "onCommand:git-assistant.quickClone",
-        "onCommand:git-assistant.initRepository",
-        "onCommand:git-assistant.addRemote",
-        "onCommand:git-assistant.initialCommit",
-        "onView:git-assistant.branchView",
-        "workspaceContains:.git",
-        "onStartupFinished"
-    ],
-    "main": "./dist/extension.js",
-    "contributes": {
-        "commands": [
-            {
-                "command": "git-assistant.quickPush",
-                "title": "Git Assistant: 快速推送 (Push)",
-                "icon": "$(cloud-upload)"
-            },
-            {
-                "command": "git-assistant.quickPull",
-                "title": "Git Assistant: 快速拉取 (Pull)",
-                "icon": "$(cloud-download)"
-            },
-            {
-                "command": "git-assistant.quickClone",
-                "title": "Git Assistant: 克隆仓库 (Clone)",
-                "icon": "$(repo-clone)"
-            },
-            {
-                "command": "git-assistant.initRepository",
-                "title": "Git Assistant: 初始化仓库 (Init)",
-                "icon": "$(repo-create)"
-            },
-            {
-                "command": "git-assistant.addRemote",
-                "title": "Git Assistant: 添加远程仓库",
-                "icon": "$(cloud)"
-            },
-            {
-                "command": "git-assistant.addFiles",
-                "title": "Git Assistant: 添加文件 (Add)",
-                "icon": "$(add)"
-            },
-            {
-                "command": "git-assistant.commitChanges",
-                "title": "Git Assistant: 提交更改 (Commit)",
-                "icon": "$(check)"
-            },
-            {
-                "command": "git-assistant.createBranch",
-                "title": "Git Assistant: 创建分支",
-                "icon": "$(git-branch)"
-            },
-            {
-                "command": "git-assistant.switchBranch",
-                "title": "Git Assistant: 切换分支",
-                "icon": "$(git-branch)"
-            },
-            {
-                "command": "git-assistant.mergeBranch",
-                "title": "Git Assistant: 合并分支",
-                "icon": "$(git-merge)"
-            },
-            {
-                "command": "git-assistant.renameBranch",
-                "title": "Git Assistant: 重命名分支",
-                "icon": "$(edit)"
-            },
-            {
-                "command": "git-assistant.deleteBranch",
-                "title": "Git Assistant: 删除分支",
-                "icon": "$(trash)"
-            },
-            {
-                "command": "git-assistant.showHistory",
-                "title": "Git Assistant: 查看提交历史",
-                "icon": "$(history)"
-            },
-            {
-                "command": "git-assistant.resolveConflicts",
-                "title": "Git Assistant: 解决冲突",
-                "icon": "$(warning)"
-            },
-            {
-                "command": "git-assistant.refreshBranches",
-                "title": "Git Assistant: 刷新分支列表",
-                "icon": "$(refresh)"
-            },
-            {
-                "command": "git-assistant.openDashboard",
-                "title": "Git Assistant: 打开控制面板",
-                "icon": "$(dashboard)"
-            },
-            {
-                "command": "git-assistant.branchQuickActions",
-                "title": "Git Assistant: 分支视图快捷操作",
-                "icon": "$(kebab-horizontal)"
-            }
-        ],
-        "viewsContainers": {
-            "activitybar": [
-                {
-                    "id": "git-assistant",
-                    "title": "Git Assistant",
-                    "icon": "resources/git-icon.svg"
-                }
-            ]
-        },
-        "views": {
-            "git-assistant": [
-                {
-                    "id": "git-assistant.branchView",
-                    "name": "分支管理"
-                },
-                {
-                    "id": "git-assistant.historyView",
-                    "name": "提交历史"
-                },
-                {
-                    "id": "git-assistant.conflictView",
-                    "name": "冲突检测"
-                }
-            ]
-        },
-        "menus": {
-            "view/title": [
-                {
-                    "command": "git-assistant.refreshBranches",
-                    "when": "view == git-assistant.branchView",
-                    "group": "navigation@2"
-                },
-                {
-                    "command": "git-assistant.branchQuickActions",
-                    "when": "view == git-assistant.branchView",
-                    "group": "navigation@1"
-                }
-            ],
-            "commandPalette": [
-                {
-                    "command": "git-assistant.quickPush"
-                },
-                {
-                    "command": "git-assistant.quickPull"
-                },
-                {
-                    "command": "git-assistant.quickClone"
-                }
-            ]
-        },
-        "keybindings": [
-            {
-                "command": "git-assistant.quickPush",
-                "key": "ctrl+alt+p",
-                "mac": "cmd+alt+p"
-            },
-            {
-                "command": "git-assistant.quickPull",
-                "key": "ctrl+alt+l",
-                "mac": "cmd+alt+l"
-            },
-            {
-                "command": "git-assistant.switchBranch",
-                "key": "ctrl+alt+b",
-                "mac": "cmd+alt+b"
-            }
-        ],
-        "configuration": {
-            "title": "Git Assistant",
-            "properties": {
-                "git-assistant.autoFetch": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "自动获取远程分支更新"
-                },
-                "git-assistant.confirmPush": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "推送前需要确认"
-                },
-                "git-assistant.maxHistoryCount": {
-                    "type": "number",
-                    "default": 100,
-                    "description": "历史记录显示数量"
-                },
-                "git-assistant.conflictHighlight": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "启用冲突高亮显示"
-                },
-                "git-assistant.defaultRemote": {
-                    "type": "string",
-                    "default": "",
-                    "description": "快速推送/拉取等操作时优先使用的远程名称（留空则自动选择）"
-                }
-            }
-        }
-    },
-    "scripts": {
-        "vscode:prepublish": "npm run package",
-        "compile": "webpack --mode development",
-        "watch": "webpack --mode development --watch",
-        "package": "webpack --mode production --devtool hidden-source-map",
-        "compile-tests": "tsc -p tsconfig.test.json --outDir out",
-        "watch-tests": "tsc -p tsconfig.test.json -w --outDir out",
-        "pretest": "npm run compile-tests && npm run compile && npm run lint",
-        "lint": "eslint src --ext ts",
-        "test": "node ./out/test/runTest.js"
-    },
-    "devDependencies": {
-        "@types/d3": "^7.4.3",
-        "@types/d3-force": "^3.0.10",
-        "@types/node": "^20.0.0",
-        "@types/react": "^18.2.0",
-        "@types/react-dom": "^18.2.0",
-        "@types/vscode": "^1.80.0",
-        "@typescript-eslint/eslint-plugin": "^6.0.0",
-        "@typescript-eslint/parser": "^6.0.0",
-        "@vscode/test-electron": "^2.3.0",
-        "@types/glob": "^8.1.0",
-        "@types/mocha": "^10.0.0",
-        "css-loader": "^6.8.1",
-        "eslint": "^8.40.0",
-        "glob": "^10.3.0",
-        "mocha": "^10.2.0",
-        "style-loader": "^3.3.3",
-        "ts-loader": "^9.4.0",
-        "typescript": "^5.1.0",
-        "webpack": "^5.85.0",
-        "webpack-cli": "^5.1.0"
-    },
-    "dependencies": {
-        "@react-three/drei": "^9.88.13",
-        "@react-three/fiber": "^8.15.11",
-        "d3": "^7.8.5",
-        "d3-force": "^3.0.0",
-        "react": "^18.2.0",
-        "react-dom": "^18.2.0",
-        "simple-git": "^3.19.0",
-        "three": "^0.170.0"
-    }
+	"name": "gitly",
+	"displayName": "Gitly",
+	"version": "1.1.0",
+	"publisher": "YiXuan",
+	"author": {
+		"name": "YiXuan",
+		"email": ""
+	},
+	"description": "View a Gitly of your repository, and perform Git actions from the graph.",
+	"keywords": [
+		"git",
+		"graph",
+		"visualise",
+		"diff",
+		"action"
+	],
+	"categories": [
+		"Other"
+	],
+	"homepage": "https://github.com/YIXUAN-oss/Gitly",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/YIXUAN-oss/Gitly.git"
+	},
+	"bugs": {
+		"url": "https://github.com/YIXUAN-oss/Gitly/issues"
+	},
+	"qna": "https://github.com/YIXUAN-oss/Gitly/issues",
+	"license": "SEE LICENSE IN 'LICENSE'",
+	"icon": "resources/icon.png",
+	"engines": {
+		"vscode": "^1.38.0"
+	},
+	"extensionKind": [
+		"workspace"
+	],
+	"activationEvents": [
+		"*"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"category": "Gitly",
+				"command": "gitly.view",
+				"title": "View Gitly (git log)",
+				"icon": {
+					"light": "resources/cmd-icon-light.svg",
+					"dark": "resources/cmd-icon-dark.svg"
+				}
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.addGitRepository",
+				"title": "Add Git Repository..."
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.clearAvatarCache",
+				"title": "Clear Avatar Cache"
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.endAllWorkspaceCodeReviews",
+				"title": "End All Code Reviews in Workspace"
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.endSpecificWorkspaceCodeReview",
+				"title": "End a specific Code Review in Workspace..."
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.fetch",
+				"title": "Fetch from Remote(s)"
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.removeGitRepository",
+				"title": "Remove Git Repository..."
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.resumeWorkspaceCodeReview",
+				"title": "Resume a specific Code Review in Workspace..."
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.version",
+				"title": "Get Version Information"
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.openFile",
+				"title": "Open File",
+				"icon": "$(go-to-file)",
+				"enablement": "isInDiffEditor && resourceScheme == gitly && gitly:codiconsSupported"
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.sidebar.refreshBranches",
+				"title": "Gitly: 刷新分支管理",
+				"icon": "$(refresh)"
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.sidebar.refreshHistory",
+				"title": "Gitly: 刷新提交历史",
+				"icon": "$(history)"
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.sidebar.refreshConflicts",
+				"title": "Gitly: 刷新冲突检测",
+				"icon": "$(warning)"
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.sidebar.checkoutBranch",
+				"title": "Gitly: 切换到分支",
+				"icon": "$(git-branch)"
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.sidebar.showCommitDetails",
+				"title": "Gitly: 查看提交详情",
+				"icon": "$(eye)"
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.sidebar.openGitGraph",
+				"title": "Gitly: 打开 Git 图形视图",
+				"icon": "$(git-compare)"
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.openAssistant",
+				"title": "Gitly: 打开可视化面板",
+				"icon": "$(dashboard)"
+			},
+			{
+				"category": "Gitly",
+				"command": "gitly.openSettings",
+				"title": "Open Gitly Settings",
+				"icon": "$(gear)"
+			}
+		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "gitly-sidebar",
+					"title": "GITLY",
+					"icon": "resources/icon.png"
+				}
+			]
+		},
+		"views": {
+			"gitly-sidebar": [
+				{
+					"id": "gitly.sidebar.branches",
+					"name": "%gitly.sidebar.branches%",
+					"icon": "resources/icon.png"
+				},
+				{
+					"id": "gitly.sidebar.history",
+					"name": "%gitly.sidebar.history%"
+				},
+				{
+					"id": "gitly.sidebar.conflicts",
+					"name": "%gitly.sidebar.conflicts%"
+				}
+			]
+		},
+		"configuration": {
+			"type": "object",
+			"title": "Gitly",
+			"properties": {
+				"gitly.commitDetailsView.autoCenter": {
+					"type": "boolean",
+					"default": true,
+					"description": "%gitly.commitDetailsView.autoCenter%"
+				},
+				"gitly.commitDetailsView.fileView.fileTree.compactFolders": {
+					"type": "boolean",
+					"default": true,
+					"description": "%gitly.commitDetailsView.fileView.fileTree.compactFolders%"
+				},
+				"gitly.commitDetailsView.fileView.type": {
+					"type": "string",
+					"enum": [
+						"File Tree",
+						"File List"
+					],
+					"enumDescriptions": [
+						"%gitly.commitDetailsView.fileView.type.enum.File Tree%",
+						"%gitly.commitDetailsView.fileView.type.enum.File List%"
+					],
+					"default": "File Tree",
+					"description": "%gitly.commitDetailsView.fileView.type%"
+				},
+				"gitly.commitDetailsView.location": {
+					"type": "string",
+					"enum": [
+						"Inline",
+						"Docked to Bottom"
+					],
+					"enumDescriptions": [
+						"%gitly.commitDetailsView.location.enum.Inline%",
+						"%gitly.commitDetailsView.location.enum.Docked to Bottom%"
+					],
+					"default": "Inline",
+					"description": "%gitly.commitDetailsView.location%"
+				},
+				"gitly.contextMenuActionsVisibility": {
+					"type": "object",
+					"default": {},
+					"properties": {
+						"branch": {
+							"type": "object",
+							"properties": {
+								"checkout": {
+									"type": "boolean",
+									"title": "Checkout Branch"
+								},
+								"rename": {
+									"type": "boolean",
+									"title": "Rename Branch..."
+								},
+								"delete": {
+									"type": "boolean",
+									"title": "Delete Branch..."
+								},
+								"merge": {
+									"type": "boolean",
+									"title": "Merge into current branch..."
+								},
+								"rebase": {
+									"type": "boolean",
+									"title": "Rebase current branch on Branch..."
+								},
+								"push": {
+									"type": "boolean",
+									"title": "Push Branch..."
+								},
+								"viewIssue": {
+									"type": "boolean",
+									"title": "View Issue"
+								},
+								"createPullRequest": {
+									"type": "boolean",
+									"title": "Create Pull Request..."
+								},
+								"createArchive": {
+									"type": "boolean",
+									"title": "Create Archive"
+								},
+								"selectInBranchesDropdown": {
+									"type": "boolean",
+									"title": "Select in Branches Dropdown"
+								},
+								"unselectInBranchesDropdown": {
+									"type": "boolean",
+									"title": "Unselect in Branches Dropdown"
+								},
+								"copyName": {
+									"type": "boolean",
+									"title": "Copy Branch Name to Clipboard"
+								}
+							}
+						},
+						"commit": {
+							"type": "object",
+							"properties": {
+								"addTag": {
+									"type": "boolean",
+									"title": "Add Tag..."
+								},
+								"createBranch": {
+									"type": "boolean",
+									"title": "Create Branch..."
+								},
+								"checkout": {
+									"type": "boolean",
+									"title": "Checkout..."
+								},
+								"cherrypick": {
+									"type": "boolean",
+									"title": "Cherry Pick..."
+								},
+								"revert": {
+									"type": "boolean",
+									"title": "Revert..."
+								},
+								"drop": {
+									"type": "boolean",
+									"title": "Drop..."
+								},
+								"merge": {
+									"type": "boolean",
+									"title": "Merge into current branch..."
+								},
+								"rebase": {
+									"type": "boolean",
+									"title": "Rebase current branch on this Commit..."
+								},
+								"reset": {
+									"type": "boolean",
+									"title": "Reset current branch to this Commit..."
+								},
+								"copyHash": {
+									"type": "boolean",
+									"title": "Copy Commit Hash to Clipboard"
+								},
+								"copySubject": {
+									"type": "boolean",
+									"title": "Copy Commit Subject to Clipboard"
+								}
+							}
+						},
+						"commitDetailsViewFile": {
+							"type": "object",
+							"properties": {
+								"viewDiff": {
+									"type": "boolean",
+									"title": "View Diff"
+								},
+								"viewFileAtThisRevision": {
+									"type": "boolean",
+									"title": "View File at this Revision"
+								},
+								"viewDiffWithWorkingFile": {
+									"type": "boolean",
+									"title": "View Diff with Working File"
+								},
+								"openFile": {
+									"type": "boolean",
+									"title": "Open File"
+								},
+								"markAsReviewed": {
+									"type": "boolean",
+									"title": "Mark as Reviewed"
+								},
+								"markAsNotReviewed": {
+									"type": "boolean",
+									"title": "Mark as Not Reviewed"
+								},
+								"resetFileToThisRevision": {
+									"type": "boolean",
+									"title": "Reset File to this Revision..."
+								},
+								"copyAbsoluteFilePath": {
+									"type": "boolean",
+									"title": "Copy Absolute File Path to Clipboard"
+								},
+								"copyRelativeFilePath": {
+									"type": "boolean",
+									"title": "Copy Relative File Path to Clipboard"
+								}
+							}
+						},
+						"remoteBranch": {
+							"type": "object",
+							"properties": {
+								"checkout": {
+									"type": "boolean",
+									"title": "Checkout Branch..."
+								},
+								"delete": {
+									"type": "boolean",
+									"title": "Delete Remote Branch..."
+								},
+								"fetch": {
+									"type": "boolean",
+									"title": "Fetch into local branch..."
+								},
+								"merge": {
+									"type": "boolean",
+									"title": "Merge into current branch..."
+								},
+								"pull": {
+									"type": "boolean",
+									"title": "Pull into current branch..."
+								},
+								"viewIssue": {
+									"type": "boolean",
+									"title": "View Issue"
+								},
+								"createPullRequest": {
+									"type": "boolean",
+									"title": "Create Pull Request"
+								},
+								"createArchive": {
+									"type": "boolean",
+									"title": "Create Archive"
+								},
+								"selectInBranchesDropdown": {
+									"type": "boolean",
+									"title": "Select in Branches Dropdown"
+								},
+								"unselectInBranchesDropdown": {
+									"type": "boolean",
+									"title": "Unselect in Branches Dropdown"
+								},
+								"copyName": {
+									"type": "boolean",
+									"title": "Copy Branch Name to Clipboard"
+								}
+							}
+						},
+						"stash": {
+							"type": "object",
+							"properties": {
+								"apply": {
+									"type": "boolean",
+									"title": "Apply Stash..."
+								},
+								"createBranch": {
+									"type": "boolean",
+									"title": "Create Branch from Stash..."
+								},
+								"pop": {
+									"type": "boolean",
+									"title": "Pop Stash..."
+								},
+								"drop": {
+									"type": "boolean",
+									"title": "Drop Stash..."
+								},
+								"copyName": {
+									"type": "boolean",
+									"title": "Copy Stash Name to Clipboard"
+								},
+								"copyHash": {
+									"type": "boolean",
+									"title": "Copy Stash Hash to Clipboard"
+								}
+							}
+						},
+						"tag": {
+							"type": "object",
+							"properties": {
+								"viewDetails": {
+									"type": "boolean",
+									"title": "View Details"
+								},
+								"delete": {
+									"type": "boolean",
+									"title": "Delete Tag..."
+								},
+								"push": {
+									"type": "boolean",
+									"title": "Push Tag..."
+								},
+								"createArchive": {
+									"type": "boolean",
+									"title": "Create Archive"
+								},
+								"copyName": {
+									"type": "boolean",
+									"title": "Copy Tag Name to Clipboard"
+								}
+							}
+						},
+						"uncommittedChanges": {
+							"type": "object",
+							"properties": {
+								"stash": {
+									"type": "boolean",
+									"title": "Stash uncommitted changes..."
+								},
+								"reset": {
+									"type": "boolean",
+									"title": "Reset uncommitted changes..."
+								},
+								"clean": {
+									"type": "boolean",
+									"title": "Clean untracked files..."
+								},
+								"openSourceControlView": {
+									"type": "boolean",
+									"title": "Open Source Control View"
+								}
+							}
+						}
+					},
+					"markdownDescription": "Customise which context menu actions are visible. For example, if you want to hide the rebase action from the branch context menu, a suitable value for this setting is `{ \"branch\": { \"rebase\": false } }`. For more information of how to configure this setting, view the documentation [here](https://github.com/mhutchie/vscode-gitly/wiki/Extension-Settings#context-menu-actions-visibility)."
+				},
+				"gitly.customBranchGlobPatterns": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"title": "Branch Glob Pattern",
+						"required": [
+							"name",
+							"glob"
+						],
+						"properties": {
+							"name": {
+								"type": "string",
+								"title": "Name of pattern",
+								"description": "Name used to reference the pattern in the 'Branches' dropdown"
+							},
+							"glob": {
+								"type": "string",
+								"title": "Glob pattern",
+								"description": "The Glob Pattern <glob-pattern>, as used in 'git log --glob=<glob-pattern>'. For example: heads/feature/*"
+							}
+						}
+					},
+					"default": [],
+					"description": "An array of Custom Branch Glob Patterns to be shown in the 'Branches' dropdown. Example: [{\"name\": \"Feature Requests\", \"glob\": \"heads/feature/*\"}]"
+				},
+				"gitly.customEmojiShortcodeMappings": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"title": "Custom Emoji Shortcode Mapping",
+						"required": [
+							"shortcode",
+							"emoji"
+						],
+						"properties": {
+							"shortcode": {
+								"type": "string",
+								"title": "Emoji Shortcode",
+								"description": "Emoji Shortcode (e.g. \":sparkles:\")"
+							},
+							"emoji": {
+								"type": "string",
+								"title": "Emoji",
+								"description": "Emoji (e.g. \"✨\")"
+							}
+						}
+					},
+					"default": [],
+					"description": "An array of custom Emoji Shortcode mappings. Example: [{\"shortcode\": \":sparkles:\", \"emoji\":\"✨\"}]"
+				},
+				"gitly.customPullRequestProviders": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"title": "Pull Request Provider",
+						"required": [
+							"name",
+							"templateUrl"
+						],
+						"properties": {
+							"name": {
+								"type": "string",
+								"title": "Name of the Provider",
+								"description": "A unique, identifying, display name for the provider."
+							},
+							"templateUrl": {
+								"type": "string",
+								"title": "Template URL",
+								"markdownDescription": "A template URL that can be used to create a Pull Request, after the $1 - $8 variables have been substituted to construct the final URL. For information on how to configure this setting, see the documentation [here](https://github.com/mhutchie/vscode-gitly/wiki/Configuring-a-custom-Pull-Request-Provider)."
+							}
+						}
+					},
+					"default": [],
+					"markdownDescription": "An array of custom Pull Request providers that can be used in the \"Pull Request Creation\" Integration. For information on how to configure this setting, see the documentation [here](https://github.com/mhutchie/vscode-gitly/wiki/Configuring-a-custom-Pull-Request-Provider)."
+				},
+				"gitly.date.format": {
+					"type": "string",
+					"enum": [
+						"Date & Time",
+						"Date Only",
+						"ISO Date & Time",
+						"ISO Date Only",
+						"Relative"
+					],
+					"enumDescriptions": [
+						"Show the date and time (e.g. \"24 Mar 2019 21:34\")",
+						"Show the date only (e.g. \"24 Mar 2019\")",
+						"Show the ISO date and time (e.g. \"2019-03-24 21:34\")",
+						"Show the ISO date only (e.g. \"2019-03-24\")",
+						"Show relative times (e.g. \"5 minutes ago\")"
+					],
+					"default": "Date & Time",
+					"description": "Specifies the date format to be used in the \"Date\" column on the Gitly View."
+				},
+				"gitly.date.type": {
+					"type": "string",
+					"enum": [
+						"Author Date",
+						"Commit Date"
+					],
+					"enumDescriptions": [
+						"Use the author date of a commit.",
+						"Use the committer date of a commit."
+					],
+					"default": "Author Date",
+					"description": "Specifies the date type to be displayed in the \"Date\" column on the Gitly View."
+				},
+				"gitly.defaultColumnVisibility": {
+					"type": "object",
+					"properties": {
+						"Date": {
+							"type": "boolean",
+							"title": "Visibility of the Date column"
+						},
+						"Author": {
+							"type": "boolean",
+							"title": "Visibility of the Author column"
+						},
+						"Commit": {
+							"type": "boolean",
+							"title": "Visibility of the Commit column"
+						}
+					},
+					"default": {
+						"Date": true,
+						"Author": true,
+						"Commit": true
+					},
+					"description": "An object specifying the default visibility of the Date, Author & Commit columns. Example: {\"Date\": true, \"Author\": true, \"Commit\": true}"
+				},
+				"gitly.dialog.addTag.pushToRemote": {
+					"type": "boolean",
+					"default": false,
+					"description": "Default state of the field indicating whether the tag should be pushed to a remote once it is added."
+				},
+				"gitly.dialog.addTag.type": {
+					"type": "string",
+					"enum": [
+						"Annotated",
+						"Lightweight"
+					],
+					"default": "Annotated",
+					"description": "Default type of the tag being added."
+				},
+				"gitly.dialog.applyStash.reinstateIndex": {
+					"type": "boolean",
+					"default": false,
+					"description": "Default state of the \"Reinstate Index\" checkbox."
+				},
+				"gitly.dialog.cherryPick.noCommit": {
+					"type": "boolean",
+					"default": false,
+					"description": "Default state of the \"No Commit\" checkbox."
+				},
+				"gitly.dialog.cherryPick.recordOrigin": {
+					"type": "boolean",
+					"default": false,
+					"description": "Default state of the \"Record Origin\" checkbox."
+				},
+				"gitly.dialog.createBranch.checkOut": {
+					"type": "boolean",
+					"default": false,
+					"description": "Default state of the \"Check out\" checkbox."
+				},
+				"gitly.dialog.deleteBranch.forceDelete": {
+					"type": "boolean",
+					"default": false,
+					"description": "Default state of the \"Force Delete\" checkbox."
+				},
+				"gitly.dialog.fetchIntoLocalBranch.forceFetch": {
+					"type": "boolean",
+					"default": false,
+					"description": "Default state of the \"Force Fetch\" checkbox."
+				},
+				"gitly.dialog.fetchRemote.prune": {
+					"type": "boolean",
+					"default": false,
+					"description": "Default state of the \"Prune\" checkbox."
+				},
+				"gitly.dialog.fetchRemote.pruneTags": {
+					"type": "boolean",
+					"default": false,
+					"description": "Default state of the \"Prune Tags\" checkbox."
+				},
+				"gitly.dialog.general.referenceInputSpaceSubstitution": {
+					"type": "string",
+					"enum": [
+						"None",
+						"Hyphen",
+						"Underscore"
+					],
+					"enumDescriptions": [
+						"Don't replace spaces.",
+						"Replace space characters with hyphens, for example: \"new branch\" -> \"new-branch\".",
+						"Replace space characters with underscores, for example: \"new branch\" -> \"new_branch\"."
+					],
+					"default": "None",
+					"description": "Specifies a substitution that is automatically performed when space characters are entered or pasted into reference inputs on dialogs (e.g. Create Branch, Add Tag, etc.)."
+				},
+				"gitly.dialog.merge.noCommit": {
+					"type": "boolean",
+					"default": false,
+					"description": "Default state of the \"No Commit\" checkbox."
+				},
+				"gitly.dialog.merge.noFastForward": {
+					"type": "boolean",
+					"default": true,
+					"description": "Default state of the \"Create a new commit even if fast-forward is possible\" checkbox."
+				},
+				"gitly.dialog.merge.squashCommits": {
+					"type": "boolean",
+					"default": false,
+					"description": "Default state of the \"Squash Commits\" checkbox."
+				},
+				"gitly.dialog.merge.squashMessageFormat": {
+					"type": "string",
+					"enum": [
+						"Default",
+						"Git SQUASH_MSG"
+					],
+					"enumDescriptions": [
+						"Use the squash message generated by Gitly.",
+						"Use the detailed squash message generated by Git (stored in .git/SQUASH_MSG)."
+					],
+					"default": "Default",
+					"description": "Specifies the message format used for the squashed commit (when the \"Squash Commits\" option is selected)."
+				},
+				"gitly.dialog.popStash.reinstateIndex": {
+					"type": "boolean",
+					"default": false,
+					"description": "Default state of the \"Reinstate Index\" checkbox."
+				},
+				"gitly.dialog.pullBranch.noFastForward": {
+					"type": "boolean",
+					"default": false,
+					"description": "Default state of the \"Create a new commit even if fast-forward is possible\" checkbox."
+				},
+				"gitly.dialog.pullBranch.squashCommits": {
+					"type": "boolean",
+					"default": false,
+					"description": "Default state of the \"Squash Commits\" checkbox."
+				},
+				"gitly.dialog.pullBranch.squashMessageFormat": {
+					"type": "string",
+					"enum": [
+						"Default",
+						"Git SQUASH_MSG"
+					],
+					"enumDescriptions": [
+						"Use the squash message generated by Gitly.",
+						"Use the detailed squash message generated by Git (stored in .git/SQUASH_MSG)."
+					],
+					"default": "Default",
+					"description": "Specifies the message format used for the squashed commit (when the \"Squash Commits\" option is selected)."
+				},
+				"gitly.dialog.rebase.ignoreDate": {
+					"type": "boolean",
+					"default": true,
+					"description": "Default state of the \"Ignore Date (non-interactive rebase only)\" checkbox."
+				},
+				"gitly.dialog.rebase.launchInteractiveRebase": {
+					"type": "boolean",
+					"default": false,
+					"description": "Default state of the \"Launch Interactive Rebase in new Terminal\" checkbox."
+				},
+				"gitly.dialog.resetCurrentBranchToCommit.mode": {
+					"type": "string",
+					"enum": [
+						"Soft",
+						"Mixed",
+						"Hard"
+					],
+					"enumDescriptions": [
+						"Soft - Keep all changes, but reset head",
+						"Mixed - Keep working tree, but reset index",
+						"Hard - Discard all changes"
+					],
+					"default": "Mixed",
+					"description": "Default mode to be used for the reset action."
+				},
+				"gitly.dialog.resetUncommittedChanges.mode": {
+					"type": "string",
+					"enum": [
+						"Mixed",
+						"Hard"
+					],
+					"enumDescriptions": [
+						"Mixed - Keep working tree, but reset index",
+						"Hard - Discard all changes"
+					],
+					"default": "Mixed",
+					"description": "Default mode to be used for the reset action."
+				},
+				"gitly.dialog.stashUncommittedChanges.includeUntracked": {
+					"type": "boolean",
+					"default": true,
+					"description": "Default state of the \"Include Untracked\" checkbox."
+				},
+				"gitly.enhancedAccessibility": {
+					"type": "boolean",
+					"default": false,
+					"description": "%gitly.enhancedAccessibility%"
+				},
+				"gitly.fileEncoding": {
+					"type": "string",
+					"default": "utf8",
+					"markdownDescription": "The character set encoding used when retrieving a specific version of repository files (e.g. in the Diff View). A list of all supported encodings can be found [here](https://github.com/ashtuchkin/iconv-lite/wiki/Supported-Encodings).",
+					"scope": "resource"
+				},
+				"gitly.graph.colours": {
+					"type": "array",
+					"items": {
+						"type": "string",
+						"description": "Colour (HEX or RGB)",
+						"pattern": "^\\s*(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|rgb[a]?\\s*\\(\\d{1,3},\\s*\\d{1,3},\\s*\\d{1,3}\\))\\s*$"
+					},
+					"default": [
+						"#0085d9",
+						"#d9008f",
+						"#00d90a",
+						"#d98500",
+						"#a300d9",
+						"#ff0000",
+						"#00d9cc",
+						"#e138e8",
+						"#85d900",
+						"#dc5b23",
+						"#6f24d6",
+						"#ffcc00"
+					],
+					"description": "Specifies the colours used on the graph."
+				},
+				"gitly.graph.style": {
+					"type": "string",
+					"enum": [
+						"rounded",
+						"angular"
+					],
+					"enumDescriptions": [
+						"Use smooth curves when transitioning between branches on the graph.",
+						"Use angular lines when transitioning between branches on the graph."
+					],
+					"default": "rounded",
+					"description": "Specifies the style of the graph."
+				},
+				"gitly.graph.uncommittedChanges": {
+					"type": "string",
+					"enum": [
+						"Open Circle at the Uncommitted Changes",
+						"Open Circle at the Checked Out Commit"
+					],
+					"enumDescriptions": [
+						"Display the Uncommitted Changes as a grey open circle, connected to the commit referenced by HEAD with a solid grey line. The current file system's state is therefore always displayed as an open circle.",
+						"Display the Uncommitted Changes as a grey closed circle, connected to the commit referenced by HEAD with a dotted grey line. The commit referenced by HEAD is therefore always displayed as an open circle."
+					],
+					"default": "Open Circle at the Uncommitted Changes",
+					"description": "Specifies how the Uncommitted Changes are displayed on the graph."
+				},
+				"gitly.integratedTerminalShell": {
+					"type": "string",
+					"default": "",
+					"description": "Specifies the path and filename of the Shell executable to be used by the Visual Studio Code Integrated Terminal, when it is opened by Gitly. For example, to use Git Bash on Windows this setting would commonly be set to \"C:\\Program Files\\Git\\bin\\bash.exe\". If this setting is left blank, the default Shell is used.",
+					"scope": "machine"
+				},
+				"gitly.keyboardShortcut.find": {
+					"type": "string",
+					"enum": [
+						"UNASSIGNED",
+						"CTRL/CMD + A",
+						"CTRL/CMD + B",
+						"CTRL/CMD + C",
+						"CTRL/CMD + D",
+						"CTRL/CMD + E",
+						"CTRL/CMD + F",
+						"CTRL/CMD + G",
+						"CTRL/CMD + H",
+						"CTRL/CMD + I",
+						"CTRL/CMD + J",
+						"CTRL/CMD + K",
+						"CTRL/CMD + L",
+						"CTRL/CMD + M",
+						"CTRL/CMD + N",
+						"CTRL/CMD + O",
+						"CTRL/CMD + P",
+						"CTRL/CMD + Q",
+						"CTRL/CMD + R",
+						"CTRL/CMD + S",
+						"CTRL/CMD + T",
+						"CTRL/CMD + U",
+						"CTRL/CMD + V",
+						"CTRL/CMD + W",
+						"CTRL/CMD + X",
+						"CTRL/CMD + Y",
+						"CTRL/CMD + Z"
+					],
+					"default": "CTRL/CMD + F",
+					"description": "The keybinding for the keyboard shortcut that opens the Find Widget in the Gitly View."
+				},
+				"gitly.keyboardShortcut.refresh": {
+					"type": "string",
+					"enum": [
+						"UNASSIGNED",
+						"CTRL/CMD + A",
+						"CTRL/CMD + B",
+						"CTRL/CMD + C",
+						"CTRL/CMD + D",
+						"CTRL/CMD + E",
+						"CTRL/CMD + F",
+						"CTRL/CMD + G",
+						"CTRL/CMD + H",
+						"CTRL/CMD + I",
+						"CTRL/CMD + J",
+						"CTRL/CMD + K",
+						"CTRL/CMD + L",
+						"CTRL/CMD + M",
+						"CTRL/CMD + N",
+						"CTRL/CMD + O",
+						"CTRL/CMD + P",
+						"CTRL/CMD + Q",
+						"CTRL/CMD + R",
+						"CTRL/CMD + S",
+						"CTRL/CMD + T",
+						"CTRL/CMD + U",
+						"CTRL/CMD + V",
+						"CTRL/CMD + W",
+						"CTRL/CMD + X",
+						"CTRL/CMD + Y",
+						"CTRL/CMD + Z"
+					],
+					"default": "CTRL/CMD + R",
+					"description": "The keybinding for the keyboard shortcut that refreshes the Gitly View."
+				},
+				"gitly.keyboardShortcut.scrollToHead": {
+					"type": "string",
+					"enum": [
+						"UNASSIGNED",
+						"CTRL/CMD + A",
+						"CTRL/CMD + B",
+						"CTRL/CMD + C",
+						"CTRL/CMD + D",
+						"CTRL/CMD + E",
+						"CTRL/CMD + F",
+						"CTRL/CMD + G",
+						"CTRL/CMD + H",
+						"CTRL/CMD + I",
+						"CTRL/CMD + J",
+						"CTRL/CMD + K",
+						"CTRL/CMD + L",
+						"CTRL/CMD + M",
+						"CTRL/CMD + N",
+						"CTRL/CMD + O",
+						"CTRL/CMD + P",
+						"CTRL/CMD + Q",
+						"CTRL/CMD + R",
+						"CTRL/CMD + S",
+						"CTRL/CMD + T",
+						"CTRL/CMD + U",
+						"CTRL/CMD + V",
+						"CTRL/CMD + W",
+						"CTRL/CMD + X",
+						"CTRL/CMD + Y",
+						"CTRL/CMD + Z"
+					],
+					"default": "CTRL/CMD + H",
+					"description": "The keybinding for the keyboard shortcut that scrolls the Gitly View to be centered on the commit referenced by HEAD."
+				},
+				"gitly.keyboardShortcut.scrollToStash": {
+					"type": "string",
+					"enum": [
+						"UNASSIGNED",
+						"CTRL/CMD + A",
+						"CTRL/CMD + B",
+						"CTRL/CMD + C",
+						"CTRL/CMD + D",
+						"CTRL/CMD + E",
+						"CTRL/CMD + F",
+						"CTRL/CMD + G",
+						"CTRL/CMD + H",
+						"CTRL/CMD + I",
+						"CTRL/CMD + J",
+						"CTRL/CMD + K",
+						"CTRL/CMD + L",
+						"CTRL/CMD + M",
+						"CTRL/CMD + N",
+						"CTRL/CMD + O",
+						"CTRL/CMD + P",
+						"CTRL/CMD + Q",
+						"CTRL/CMD + R",
+						"CTRL/CMD + S",
+						"CTRL/CMD + T",
+						"CTRL/CMD + U",
+						"CTRL/CMD + V",
+						"CTRL/CMD + W",
+						"CTRL/CMD + X",
+						"CTRL/CMD + Y",
+						"CTRL/CMD + Z"
+					],
+					"default": "CTRL/CMD + S",
+					"description": "The keybinding for the keyboard shortcut that scrolls the Gitly View to the first (or next) stash in the loaded commits. The Shift Key Modifier can be applied to this keybinding to scroll the Gitly View to the last (or previous) stash in the loaded commits."
+				},
+				"gitly.markdown": {
+					"type": "boolean",
+					"default": true,
+					"description": "Parse and render a frequently used subset of inline Markdown formatting rules in commit messages and tag details (bold, italics, bold & italics, and inline code blocks)."
+				},
+				"gitly.maxDepthOfRepoSearch": {
+					"type": "number",
+					"default": 0,
+					"description": "Specifies the maximum depth of subfolders to search when discovering repositories in the workspace. Note: Sub-repos are not automatically detected when searching subfolders, however they can be manually added by running the command \"Gitly: Add Git Repository\" in the Command Palette."
+				},
+				"gitly.openNewTabEditorGroup": {
+					"type": "string",
+					"enum": [
+						"Active",
+						"Beside",
+						"One",
+						"Two",
+						"Three",
+						"Four",
+						"Five",
+						"Six",
+						"Seven",
+						"Eight",
+						"Nine"
+					],
+					"enumDescriptions": [
+						"Open the new tab in the Active Editor Group.",
+						"Open the new tab beside the Active Editor Group.",
+						"Open the new tab in the First Editor Group.",
+						"Open the new tab in the Second Editor Group.",
+						"Open the new tab in the Third Editor Group.",
+						"Open the new tab in the Fourth Editor Group.",
+						"Open the new tab in the Fifth Editor Group.",
+						"Open the new tab in the Sixth Editor Group.",
+						"Open the new tab in the Seventh Editor Group.",
+						"Open the new tab in the Eighth Editor Group.",
+						"Open the new tab in the Ninth Editor Group."
+					],
+					"default": "Active",
+					"description": "Specifies the Editor Group where Gitly should open new tabs, when performing the following actions from the Gitly View: Viewing the Visual Studio Code Diff View, Opening a File, Viewing a File at a Specific Revision."
+				},
+				"gitly.openToTheRepoOfTheActiveTextEditorDocument": {
+					"type": "boolean",
+					"default": false,
+					"description": "Open the Gitly View to the repository containing the active Text Editor document."
+				},
+				"gitly.referenceLabels.alignment": {
+					"type": "string",
+					"enum": [
+						"Normal",
+						"Branches (on the left) & Tags (on the right)",
+						"Branches (aligned to the graph) & Tags (on the right)"
+					],
+					"enumDescriptions": [
+						"Show branch & tag labels on the left of the commit message in the 'Description' column.",
+						"Show branch labels on the left of the commit message in the 'Description' column, and tag labels on the right.",
+						"Show branch labels aligned to the graph in the 'Graph' column, and tag labels on the right in the 'Description' column."
+					],
+					"default": "Normal",
+					"description": "Specifies how branch and tag reference labels are aligned for each commit."
+				},
+				"gitly.referenceLabels.combineLocalAndRemoteBranchLabels": {
+					"type": "boolean",
+					"default": true,
+					"description": "Combine local and remote branch labels if they refer to the same branch, and are on the same commit."
+				},
+				"gitly.repository.commits.fetchAvatars": {
+					"type": "boolean",
+					"default": false,
+					"description": "Fetch avatars of commit authors and committers. By enabling this setting, you consent to commit author and committer email addresses being sent GitHub, GitLab or Gravatar, depending on the repositories remote origin."
+				},
+				"gitly.repository.commits.initialLoad": {
+					"type": "number",
+					"default": 300,
+					"description": "Specifies the number of commits to initially load."
+				},
+				"gitly.repository.commits.loadMore": {
+					"type": "number",
+					"default": 100,
+					"description": "Specifies the number of additional commits to load when the \"Load More Commits\" button is pressed, or more commits are automatically loaded."
+				},
+				"gitly.repository.commits.loadMoreAutomatically": {
+					"type": "boolean",
+					"default": true,
+					"description": "When the view has been scrolled to the bottom, automatically load more commits if they exist (instead of having to press the \"Load More Commits\" button)."
+				},
+				"gitly.repository.commits.mute.commitsThatAreNotAncestorsOfHead": {
+					"type": "boolean",
+					"default": false,
+					"description": "Display commits that aren't ancestors of the checked-out branch / commit with a muted text color. Muting will only occur if the commit referenced by HEAD is within the loaded commits on the Gitly View."
+				},
+				"gitly.repository.commits.mute.mergeCommits": {
+					"type": "boolean",
+					"default": true,
+					"description": "Display merge commits with a muted text color."
+				},
+				"gitly.repository.commits.order": {
+					"type": "string",
+					"enum": [
+						"date",
+						"author-date",
+						"topo"
+					],
+					"enumDescriptions": [
+						"Show commits in the commit timestamp order.",
+						"Show commits in the author timestamp order.",
+						"Avoid showing commits on multiple lines of history intermixed."
+					],
+					"default": "date",
+					"markdownDescription": "Specifies the order of commits on the Gitly View. See [git log](https://git-scm.com/docs/git-log#_commit_ordering) for more information on each order option. This can be overridden per repository via the Gitly View's Column Header Context Menu."
+				},
+				"gitly.repository.commits.showSignatureStatus": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show the commit's signature status to the right of the Committer in the Commit Details View (only for signed commits). Hovering over the signature icon displays a tooltip with the signature details. Requires Git (>= 2.4.0) & GPG (or equivalent) to be installed on the same machine that is running Visual Studio Code."
+				},
+				"gitly.repository.fetchAndPrune": {
+					"type": "boolean",
+					"default": false,
+					"description": "Before fetching from remote(s) using the Fetch button on the Gitly View Control Bar, remove any remote-tracking references that no longer exist on the remote(s)."
+				},
+				"gitly.repository.fetchAndPruneTags": {
+					"type": "boolean",
+					"default": false,
+					"description": "Before fetching from remote(s) using the Fetch button on the Gitly View Control Bar, remove any local tags that no longer exist on the remote(s). Requires Git >= 2.17.0, and the \"Repository: Fetch And Prune\" setting to be enabled. Caution: If you work in repositories that have multiple remotes, it is not recommended to use this setting (instead you can prune tags for a specific remote via \"Fetch Remote\" Dialog from the Repository Settings Widget on the Gitly View)."
+				},
+				"gitly.repository.includeCommitsMentionedByReflogs": {
+					"type": "boolean",
+					"default": false,
+					"description": "Include commits only mentioned by reflogs in the Gitly View (only applies when showing all branches). This can be overridden per repository in the Gitly View's Repository Settings Widget."
+				},
+				"gitly.repository.onLoad.scrollToHead": {
+					"type": "boolean",
+					"default": false,
+					"description": "Automatically scroll the Gitly View to be centered on the commit referenced by HEAD. This will only occur if the commit referenced by HEAD is within the loaded commits on the Gitly View."
+				},
+				"gitly.repository.onLoad.showCheckedOutBranch": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show the checked out branch when a repository is loaded in the Gitly View. This setting can be used in conjunction with \"Repository > On Load: Show Specific Branches\". Default: false (show all branches)"
+				},
+				"gitly.repository.onLoad.showSpecificBranches": {
+					"type": "array",
+					"items": {
+						"type": "string",
+						"description": "A local branch name (e.g. \"master\"), a remote-tracking branch name prefixed with \"remotes/\" (e.g. \"remotes/origin/master\"), or a glob pattern defined in gitly.customBranchGlobPatterns prefixed with \"--glob=\" (e.g. \"--glob=heads/feature/*\")."
+					},
+					"default": [],
+					"markdownDescription": "Show specific branches when a repository is loaded in the Gitly View. Branches can be specified as follows: A local branch name (e.g. `master`), a remote-tracking branch name prefixed with \"remotes/\" (e.g. `remotes/origin/master`), or a glob pattern defined in `gitly.customBranchGlobPatterns` prefixed with \"--glob=\" (e.g. `--glob=heads/feature/*`). This setting can be used in conjunction with \"Repository > On Load: Show Checked Out Branch\". Default: [] (show all branches)"
+				},
+				"gitly.repository.onlyFollowFirstParent": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Only follow the first parent of commits when discovering the commits to load in the Gitly View. See [--first-parent](https://git-scm.com/docs/git-log#Documentation/git-log.txt---first-parent) to find out more about this setting. This can be overridden per repository in the Gitly View's Repository Settings Widget."
+				},
+				"gitly.repository.showCommitsOnlyReferencedByTags": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show Commits that are only referenced by tags in Gitly."
+				},
+				"gitly.repository.showRemoteBranches": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show Remote Branches in Gitly by default. This can be overridden per repository from the Gitly View's Control Bar."
+				},
+				"gitly.repository.showRemoteHeads": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show Remote HEAD Symbolic References in Gitly (e.g. \"origin/HEAD\")."
+				},
+				"gitly.repository.showStashes": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show Stashes in Gitly by default. This can be overridden per repository in the Gitly View's Repository Settings Widget."
+				},
+				"gitly.repository.showTags": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show Tags in Gitly by default. This can be overridden per repository in the Gitly View's Repository Settings Widget."
+				},
+				"gitly.repository.showUncommittedChanges": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show uncommitted changes. If you work on large repositories, disabling this setting can reduce the load time of the Gitly View."
+				},
+				"gitly.repository.showUntrackedFiles": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show untracked files when viewing the uncommitted changes. If you work on large repositories, disabling this setting can reduce the load time of the Gitly View."
+				},
+				"gitly.repository.sign.commits": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enables commit signing with GPG or X.509."
+				},
+				"gitly.repository.sign.tags": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enables tag signing with GPG or X.509."
+				},
+				"gitly.repository.useMailmap": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Respect [.mailmap](https://git-scm.com/docs/git-check-mailmap#_mapping_authors) files when displaying author & committer names and email addresses."
+				},
+				"gitly.repositoryDropdownOrder": {
+					"type": "string",
+					"enum": [
+						"Full Path",
+						"Name",
+						"Workspace Full Path"
+					],
+					"enumDescriptions": [
+						"Sort repositories alphabetically by the full path of the repository.",
+						"Sort repositories alphabetically by the name of the repository.",
+						"Sort repositories according to the Visual Studio Code Workspace Folder order, then alphabetically by the full path of the repository."
+					],
+					"default": "Workspace Full Path",
+					"description": "Specifies the order that repositories are sorted in the repository dropdown on the Gitly View (only visible when more than one repository exists in the current Visual Studio Code Workspace)."
+				},
+				"gitly.retainContextWhenHidden": {
+					"type": "boolean",
+					"default": true,
+					"description": "Specifies if the Gitly View's Visual Studio Code context is kept when the panel is no longer visible (e.g. moved to background tab). Enabling this setting will make Gitly load significantly faster when switching back to the Gitly tab, however has a higher memory overhead."
+				},
+				"gitly.showStatusBarItem": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show a Status Bar Item that opens the Gitly View when clicked."
+				},
+				"gitly.sourceCodeProviderIntegrationLocation": {
+					"type": "string",
+					"enum": [
+						"Inline",
+						"More Actions"
+					],
+					"enumDescriptions": [
+						"Show the 'View Gitly' action on the title of SCM Providers",
+						"Show the 'View Gitly' action in the 'More Actions...' menu on the title of SCM Providers"
+					],
+					"default": "Inline",
+					"description": "Specifies where the \"View Gitly\" action appears on the title of SCM Providers."
+				},
+				"gitly.tabIconColourTheme": {
+					"type": "string",
+					"enum": [
+						"colour",
+						"grey"
+					],
+					"enumDescriptions": [
+						"Show a colour icon which suits most Visual Studio Code colour themes",
+						"Show a grey icon which suits Visual Studio Code colour themes that are predominantly grayscale"
+					],
+					"default": "colour",
+					"description": "Specifies the colour theme of the icon displayed on the Gitly tab."
+				},
+				"gitly.autoCenterCommitDetailsView": {
+					"type": "boolean",
+					"default": true,
+					"description": "Automatically center the commit details view when it is opened.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.commitDetailsView.autoCenter",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.commitDetailsView.autoCenter#`"
+				},
+				"gitly.combineLocalAndRemoteBranchLabels": {
+					"type": "boolean",
+					"default": true,
+					"description": "Combine local and remote branch labels if they refer to the same branch, and are on the same commit.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.referenceLabels.combineLocalAndRemoteBranchLabels",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.referenceLabels.combineLocalAndRemoteBranchLabels#`"
+				},
+				"gitly.commitDetailsViewFileTreeCompactFolders": {
+					"type": "boolean",
+					"default": true,
+					"description": "Render the File Tree in the Commit Details / Comparison View in a compacted form, such that folders with a single child folder are compressed into a single combined folder element.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.commitDetailsView.fileView.fileTree.compactFolders",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.commitDetailsView.fileView.fileTree.compactFolders#`"
+				},
+				"gitly.commitDetailsViewLocation": {
+					"type": "string",
+					"enum": [
+						"Inline",
+						"Docked to Bottom"
+					],
+					"enumDescriptions": [
+						"Show the Commit Details View inline with the graph",
+						"Show the Commit Details View docked to the bottom of the Gitly view"
+					],
+					"default": "Inline",
+					"description": "Specifies where the Commit Details View is rendered in the Gitly view.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.commitDetailsView.location",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.commitDetailsView.location#`"
+				},
+				"gitly.commitOrdering": {
+					"type": "string",
+					"enum": [
+						"date",
+						"author-date",
+						"topo"
+					],
+					"enumDescriptions": [
+						"Show commits in the commit timestamp order.",
+						"Show commits in the author timestamp order.",
+						"Avoid showing commits on multiple lines of history intermixed."
+					],
+					"default": "date",
+					"markdownDescription": "Specifies the order of commits on the Gitly view. See [git log](https://git-scm.com/docs/git-log#_commit_ordering) for more information on each order option.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.commits.order",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.commits.order#`"
+				},
+				"gitly.dateFormat": {
+					"type": "string",
+					"enum": [
+						"Date & Time",
+						"Date Only",
+						"ISO Date & Time",
+						"ISO Date Only",
+						"Relative"
+					],
+					"enumDescriptions": [
+						"Show the date and time, for example \"24 Mar 2019 21:34\"",
+						"Show the date only, for example \"24 Mar 2019\"",
+						"Show the ISO date and time, for example \"2019-03-24 21:34\"",
+						"Show the ISO date only, for example \"2019-03-24\"",
+						"Show relative times, for example \"5 minutes ago\""
+					],
+					"default": "Date & Time",
+					"description": "Specifies the date format to be used in the \"Date\" column on the Gitly View.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.date.format",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.date.format#`"
+				},
+				"gitly.dateType": {
+					"type": "string",
+					"enum": [
+						"Author Date",
+						"Commit Date"
+					],
+					"enumDescriptions": [
+						"Use the author date of a commit",
+						"Use the committer date of a commit"
+					],
+					"default": "Author Date",
+					"description": "Specifies the date type to be displayed in the \"Date\" column on the Gitly View.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.date.type",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.date.type#`"
+				},
+				"gitly.defaultFileViewType": {
+					"type": "string",
+					"enum": [
+						"File Tree",
+						"File List"
+					],
+					"enumDescriptions": [
+						"Display files in a tree structure",
+						"Display files in a list (useful for repositories with deep folder structures)"
+					],
+					"default": "File Tree",
+					"description": "Sets the default type of File View used in the Commit Details / Comparison Views. This can be overridden per repository using the controls on the right side of the Commit Details / Comparison Views.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.commitDetailsView.fileView.type",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.commitDetailsView.fileView.type#`"
+				},
+				"gitly.fetchAndPrune": {
+					"type": "boolean",
+					"default": false,
+					"description": "Before fetching from remote(s) using the Fetch button on the Gitly View Control Bar, remove any remote-tracking references that no longer exist on the remote(s).",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.fetchAndPrune",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.fetchAndPrune#`"
+				},
+				"gitly.fetchAvatars": {
+					"type": "boolean",
+					"default": false,
+					"description": "Fetch avatars of commit authors and committers. By enabling this setting, you consent to commit author and committer email addresses being sent GitHub, GitLab or Gravatar, depending on the repositories remote origin.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.commits.fetchAvatars",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.commits.fetchAvatars#`"
+				},
+				"gitly.graphColours": {
+					"type": "array",
+					"items": {
+						"type": "string",
+						"description": "Colour (HEX or RGB)",
+						"pattern": "^\\s*(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|rgb[a]?\\s*\\(\\d{1,3},\\s*\\d{1,3},\\s*\\d{1,3}\\))\\s*$"
+					},
+					"default": [
+						"#0085d9",
+						"#d9008f",
+						"#00d90a",
+						"#d98500",
+						"#a300d9",
+						"#ff0000",
+						"#00d9cc",
+						"#e138e8",
+						"#85d900",
+						"#dc5b23",
+						"#6f24d6",
+						"#ffcc00"
+					],
+					"description": "Specifies the colours used on the graph.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.graph.colours",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.graph.colours#`"
+				},
+				"gitly.graphStyle": {
+					"type": "string",
+					"enum": [
+						"rounded",
+						"angular"
+					],
+					"enumDescriptions": [
+						"Use smooth curves when transitioning between branches on the graph",
+						"Use angular lines when transitioning between branches on the graph"
+					],
+					"default": "rounded",
+					"description": "Specifies the style of the graph.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.graph.style",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.graph.style#`"
+				},
+				"gitly.includeCommitsMentionedByReflogs": {
+					"type": "boolean",
+					"default": false,
+					"description": "Include commits only mentioned by reflogs in the Gitly View (only applies when showing all branches). This can be overridden per repository in the Gitly View's Repository Settings Widget.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.includeCommitsMentionedByReflogs",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.includeCommitsMentionedByReflogs#`"
+				},
+				"gitly.initialLoadCommits": {
+					"type": "number",
+					"default": 300,
+					"description": "Specifies the number of commits to initially load.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.commits.initialLoad",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.commits.initialLoad#`"
+				},
+				"gitly.loadMoreCommits": {
+					"type": "number",
+					"default": 100,
+					"description": "Specifies the number of additional commits to load when the \"Load More Commits\" button is pressed, or more commits are automatically loaded.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.commits.loadMore",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.commits.loadMore#`"
+				},
+				"gitly.loadMoreCommitsAutomatically": {
+					"type": "boolean",
+					"default": true,
+					"description": "When the view has been scrolled to the bottom, automatically load more commits if they exist (instead of having to press the \"Load More Commits\" button).",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.commits.loadMoreAutomatically",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.commits.loadMoreAutomatically#`"
+				},
+				"gitly.muteCommitsThatAreNotAncestorsOfHead": {
+					"type": "boolean",
+					"default": false,
+					"description": "Display commits that aren't ancestors of the checked-out branch / commit with a muted text color. Muting will only occur if the commit referenced by HEAD is within the loaded commits on the Gitly View.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.commits.mute.commitsThatAreNotAncestorsOfHead",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.commits.mute.commitsThatAreNotAncestorsOfHead#`"
+				},
+				"gitly.muteMergeCommits": {
+					"type": "boolean",
+					"default": true,
+					"description": "Display merge commits with a muted text color.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.commits.mute.mergeCommits",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.commits.mute.mergeCommits#`"
+				},
+				"gitly.onlyFollowFirstParent": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Only follow the first parent of commits when discovering the commits to load in the Gitly View. See [--first-parent](https://git-scm.com/docs/git-log#Documentation/git-log.txt---first-parent) to find out more about this setting.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.onlyFollowFirstParent",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.onlyFollowFirstParent#`"
+				},
+				"gitly.openDiffTabLocation": {
+					"type": "string",
+					"enum": [
+						"Active",
+						"Beside",
+						"One",
+						"Two",
+						"Three",
+						"Four",
+						"Five",
+						"Six",
+						"Seven",
+						"Eight",
+						"Nine"
+					],
+					"enumDescriptions": [
+						"Open the Visual Studio Code Diff View in the Active Editor Group.",
+						"Open the Visual Studio Code Diff View beside the Active Editor Group.",
+						"Open the Visual Studio Code Diff View in the First Editor Group.",
+						"Open the Visual Studio Code Diff View in the Second Editor Group.",
+						"Open the Visual Studio Code Diff View in the Third Editor Group.",
+						"Open the Visual Studio Code Diff View in the Fourth Editor Group.",
+						"Open the Visual Studio Code Diff View in the Fifth Editor Group.",
+						"Open the Visual Studio Code Diff View in the Sixth Editor Group.",
+						"Open the Visual Studio Code Diff View in the Seventh Editor Group.",
+						"Open the Visual Studio Code Diff View in the Eighth Editor Group.",
+						"Open the Visual Studio Code Diff View in the Ninth Editor Group."
+					],
+					"default": "Active",
+					"description": "Specifies which Editor Group the Visual Studio Code Diff View is opened in.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.openNewTabEditorGroup",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.openNewTabEditorGroup#`"
+				},
+				"gitly.openRepoToHead": {
+					"type": "boolean",
+					"default": false,
+					"description": "When opening or switching repositories in the Gitly View, automatically scroll the view to be centered on the commit referenced by HEAD. This will only occur if the commit referenced by HEAD is within the loaded commits on the Gitly View.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.onLoad.scrollToHead",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.onLoad.scrollToHead#`"
+				},
+				"gitly.referenceLabelAlignment": {
+					"type": "string",
+					"enum": [
+						"Normal",
+						"Branches (on the left) & Tags (on the right)",
+						"Branches (aligned to the graph) & Tags (on the right)"
+					],
+					"enumDescriptions": [
+						"Show branch & tag labels on the left of the commit message in the 'Description' column.",
+						"Show branch labels on the left of the commit message in the 'Description' column, and tag labels on the right.",
+						"Show branch labels aligned to the graph in the 'Graph' column, and tag labels on the right in the 'Description' column."
+					],
+					"default": "Normal",
+					"description": "Specifies how branch and tag reference labels are aligned for each commit.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.referenceLabels.alignment",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.referenceLabels.alignment#`"
+				},
+				"gitly.showCommitsOnlyReferencedByTags": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show commits that are only referenced by tags in Gitly.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.showCommitsOnlyReferencedByTags",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.showCommitsOnlyReferencedByTags#`"
+				},
+				"gitly.showCurrentBranchByDefault": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show the current branch by default when Gitly is opened. Default: false (show all branches)",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.onLoad.showCheckedOutBranch",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.onLoad.showCheckedOutBranch#`"
+				},
+				"gitly.showSignatureStatus": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show the commit's signature status to the right of the Committer in the Commit Details View (only for signed commits). Hovering over the signature icon displays a tooltip with the signature details. Requires Git (>= 2.4.0) & GPG (or equivalent) to be installed on the same machine that is running Visual Studio Code.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.commits.showSignatureStatus",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.commits.showSignatureStatus#`"
+				},
+				"gitly.showTags": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show Tags in Gitly by default. This can be overridden per repository in the Gitly View's Repository Settings Widget.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.showTags",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.showTags#`"
+				},
+				"gitly.showUncommittedChanges": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show uncommitted changes. If you work on large repositories, disabling this setting can reduce the load time of the Gitly View.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.showUncommittedChanges",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.showUncommittedChanges#`"
+				},
+				"gitly.showUntrackedFiles": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show untracked files when viewing the uncommitted changes. If you work on large repositories, disabling this setting can reduce the load time of the Gitly View.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.showUntrackedFiles",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.showUntrackedFiles#`"
+				},
+				"gitly.useMailmap": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Respect [.mailmap](https://git-scm.com/docs/git-check-mailmap#_mapping_authors) files when displaying author & committer names and email addresses.",
+					"deprecationMessage": "Depreciated: This setting has been renamed to gitly.repository.useMailmap",
+					"markdownDeprecationMessage": "Depreciated: This setting has been renamed to `#gitly.repository.useMailmap#`"
+				}
+			}
+		},
+		"menus": {
+			"commandPalette": [
+				{
+					"command": "gitly.openFile",
+					"when": "isInDiffEditor && resourceScheme == gitly && gitly:codiconsSupported"
+				}
+			],
+			"editor/title": [
+				{
+					"command": "gitly.openFile",
+					"group": "navigation",
+					"when": "isInDiffEditor && resourceScheme == gitly && gitly:codiconsSupported"
+				}
+			],
+			"view/title": [
+				{
+					"command": "gitly.sidebar.refreshBranches",
+					"when": "view == gitly.sidebar.branches",
+					"group": "navigation@0"
+				},
+				{
+					"command": "gitly.openAssistant",
+					"when": "view == gitly.sidebar.branches",
+					"group": "navigation@1"
+				},
+				{
+					"command": "gitly.sidebar.refreshHistory",
+					"when": "view == gitly.sidebar.history",
+					"group": "navigation@0"
+				},
+				{
+					"command": "gitly.sidebar.refreshConflicts",
+					"when": "view == gitly.sidebar.conflicts",
+					"group": "navigation@0"
+				},
+				{
+					"command": "gitly.sidebar.openGitGraph",
+					"when": "view =~ /^gitly\\.sidebar\\./",
+					"group": "navigation@1"
+				},
+				{
+					"command": "gitly.openSettings",
+					"when": "view =~ /^gitly\\.sidebar\\./",
+					"group": "navigation@2"
+				}
+			]
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"vscode:uninstall": "node ./out/life-cycle/uninstall.js",
+		"clean": "node ./.vscode/clean.js",
+		"compile": "npm run clean && npm run compile-src && npm run compile-web",
+		"compile-src": "tsc -p ./src && node ./.vscode/package-src.js",
+		"compile-web": "tsc -p ./web && tsc -p ./web/assistant/tsconfig.json && node ./.vscode/package-web.js && node ./scripts/copy-assistant-assets.js",
+		"compile-web-debug": "tsc -p ./web && node ./.vscode/package-web.js debug",
+		"watch:src": "tsc -p ./src -w",
+		"watch:web": "tsc -p ./web -w",
+		"watch:assistant": "tsc -p ./web/assistant/tsconfig.json -w",
+		"lint": "eslint -c .eslintrc.json --max-warnings 9999 --ext .ts ./src ./tests ./web",
+		"lint:json": "eslint -c .eslintrc.json --max-warnings 9999 --ext .ts ./src ./tests ./web -f json -o eslint-run.json",
+		"package": "vsce package",
+		"package-and-install": "npm run package && node ./.vscode/install-package.js",
+		"test": "jest --verbose",
+		"test-and-report-coverage": "jest --verbose --coverage"
+	},
+	"dependencies": {
+		"iconv-lite": "0.5.0"
+	},
+	"devDependencies": {
+		"@types/jest": "26.0.19",
+		"@types/node": "8.10.62",
+		"@types/vscode": "1.38.0",
+		"@typescript-eslint/eslint-plugin": "4.10.0",
+		"@typescript-eslint/parser": "4.10.0",
+		"eslint": "7.15.0",
+		"jest": "26.6.3",
+		"ts-jest": "26.4.4",
+		"typescript": "^4.9.5",
+		"uglify-js": "3.10.0"
+	}
 }

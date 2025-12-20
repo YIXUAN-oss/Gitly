@@ -1,130 +1,277 @@
 import * as vscode from 'vscode';
-import { GitService } from './services/git-service';
-import { BranchProvider } from './providers/branch-provider';
-import { HistoryProvider } from './providers/history-provider';
-import { ConflictProvider } from './providers/conflict-provider';
-import { registerCommands } from './commands';
-import { DashboardPanel } from './webview/dashboard-panel';
-import { Logger } from './utils/logger';
-import { CommandHistory } from './utils/command-history';
-import { MergeHistory } from './utils/merge-history';
+import { AvatarManager } from './avatarManager';
+import { CommandManager } from './commands';
+import { getConfig } from './config';
+import { DataSource } from './dataSource';
+import { DiffDocProvider } from './diffDocProvider';
+import { ExtensionState } from './extensionState';
+import { onStartUp } from './life-cycle/startup';
+import { Logger } from './logger';
+import { RepoManager } from './repoManager';
+import { StatusBarItem } from './statusBarItem';
+import {
+	GitExecutable,
+	UNABLE_TO_FIND_GIT_MSG,
+	findGit,
+	getGitExecutableFromPaths,
+	showErrorMessage,
+	showInformationMessage
+} from './utils';
+import { EventEmitter } from './utils/event';
+import {
+	BranchSidebarProvider,
+	HistorySidebarProvider,
+	ConflictSidebarProvider
+} from './sidebarViews';
+import { AssistantPanel } from './assistantPanel';
+import { AssistantCommandHistory } from './assistantCommandHistory';
+import { ConflictHistory } from './conflictHistory';
+import { registerAssistantCommands } from './assistantCommands';
 
 /**
- * 扩展激活函数
+ * Activate Gitly.
+ * @param context The context of the extension.
  */
-export function activate(context: vscode.ExtensionContext) {
-    Logger.initialize();
-    Logger.info('Git Assistant 扩展已激活');
+export async function activate(context: vscode.ExtensionContext) {
+	const logger = new Logger();
+	logger.log('Starting Gitly ...');
 
-    // 初始化命令历史与合并历史
-    CommandHistory.initialize(context);
-    MergeHistory.initialize(context);
+	const gitExecutableEmitter = new EventEmitter<GitExecutable>();
+	const onDidChangeGitExecutable = gitExecutableEmitter.subscribe;
 
-    // 初始化Git服务（带 workspaceState，用于持久化缓存）
-    const gitService = new GitService(context);
+	const extensionState = new ExtensionState(context, onDidChangeGitExecutable);
 
-    // 注册数据提供者
-    const branchProvider = new BranchProvider(gitService);
-    const historyProvider = new HistoryProvider(gitService);
-    const conflictProvider = new ConflictProvider(gitService);
+	// 初始化 Assistant 命令历史存储
+	AssistantCommandHistory.initialize(context);
+	// 初始化冲突解决历史存储
+	ConflictHistory.initialize(context);
 
-    // 刷新所有提供者的函数
-    const refreshAllProviders = () => {
-        Logger.debug('刷新所有Git提供者');
-        branchProvider.refresh();
-        historyProvider.refresh();
-        conflictProvider.refresh();
-    };
+	let gitExecutable: GitExecutable | null;
+	try {
+		gitExecutable = await findGit(extensionState);
+		gitExecutableEmitter.emit(gitExecutable);
+		logger.log('Using ' + gitExecutable.path + ' (version: ' + gitExecutable.version + ')');
+	} catch (_) {
+		gitExecutable = null;
+		showErrorMessage(UNABLE_TO_FIND_GIT_MSG);
+		logger.logError(UNABLE_TO_FIND_GIT_MSG);
+	}
 
-    // 注册树视图
-    context.subscriptions.push(
-        vscode.window.registerTreeDataProvider('git-assistant.branchView', branchProvider)
-    );
-    context.subscriptions.push(
-        vscode.window.registerTreeDataProvider('git-assistant.historyView', historyProvider)
-    );
-    context.subscriptions.push(
-        vscode.window.registerTreeDataProvider('git-assistant.conflictView', conflictProvider)
-    );
+	const configurationEmitter = new EventEmitter<vscode.ConfigurationChangeEvent>();
+	const onDidChangeConfiguration = configurationEmitter.subscribe;
 
-    // 注册所有命令
-    registerCommands(context, gitService, branchProvider, historyProvider, conflictProvider);
+	const dataSource = new DataSource(
+		gitExecutable,
+		onDidChangeConfiguration,
+		onDidChangeGitExecutable,
+		logger
+	);
+	const avatarManager = new AvatarManager(dataSource, extensionState, logger);
+	const repoManager = new RepoManager(
+		dataSource,
+		extensionState,
+		onDidChangeConfiguration,
+		logger
+	);
+	const statusBarItem = new StatusBarItem(
+		repoManager.getNumRepos(),
+		repoManager.onDidChangeRepos,
+		onDidChangeConfiguration,
+		logger
+	);
+	const commandManager = new CommandManager(
+		context,
+		avatarManager,
+		dataSource,
+		extensionState,
+		repoManager,
+		gitExecutable,
+		onDidChangeGitExecutable,
+		logger
+	);
+	const diffDocProvider = new DiffDocProvider(dataSource);
 
-    // 状态栏项
-    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-    statusBarItem.text = '$(git-branch) Git Assistant';
-    statusBarItem.tooltip = '打开 Git Assistant 控制面板';
-    statusBarItem.command = 'git-assistant.openDashboard';
-    statusBarItem.show();
-    context.subscriptions.push(statusBarItem);
+	// 侧边栏 TreeDataProvider
+	const branchSidebarProvider = new BranchSidebarProvider(
+		repoManager,
+		dataSource,
+		extensionState
+	);
+	const historySidebarProvider = new HistorySidebarProvider(
+		repoManager,
+		dataSource,
+		extensionState
+	);
+	const conflictSidebarProvider = new ConflictSidebarProvider(
+		repoManager,
+		dataSource,
+		extensionState
+	);
 
-    // 监听工作区文件夹变化（多工作区支持）
-    context.subscriptions.push(
-        vscode.workspace.onDidChangeWorkspaceFolders(async (event) => {
-            Logger.info('工作区文件夹发生变化');
-            // 重新初始化Git服务以适应新的工作区
-            if (event.added.length > 0 || event.removed.length > 0) {
-                gitService.reinitialize();
-                refreshAllProviders();
-            }
-        })
-    );
+	// Assistant 面板
+	const assistantPanel = new AssistantPanel(
+		context.extensionPath,
+		repoManager,
+		dataSource,
+		extensionState
+	);
 
-    // 优化文件系统监听 - 只监听关键Git文件以减少资源消耗
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (workspaceFolders && workspaceFolders.length > 0) {
-        // 使用防抖来避免频繁刷新
-        let refreshTimeout: NodeJS.Timeout | undefined;
-        const debouncedRefresh = () => {
-            if (refreshTimeout) {
-                clearTimeout(refreshTimeout);
-            }
-            refreshTimeout = setTimeout(() => {
-                refreshAllProviders();
-            }, 300); // 300ms防抖
-        };
+	context.subscriptions.push(
+		vscode.workspace.registerTextDocumentContentProvider(
+			DiffDocProvider.scheme,
+			diffDocProvider
+		),
+		vscode.workspace.onDidChangeConfiguration((event) => {
+			if (event.affectsConfiguration('git-graph')) {
+				configurationEmitter.emit(event);
+			} else if (event.affectsConfiguration('git.path')) {
+				const paths = getConfig().gitPaths;
+				if (paths.length === 0) return;
 
-        // 为每个工作区创建监听器
-        workspaceFolders.forEach((folder) => {
-            // 监听HEAD文件变化（分支切换、提交等）
-            const headWatcher = vscode.workspace.createFileSystemWatcher(
-                new vscode.RelativePattern(folder, '.git/HEAD')
-            );
+				getGitExecutableFromPaths(paths).then(
+					(gitExecutable) => {
+						gitExecutableEmitter.emit(gitExecutable);
+						const msg =
+							'Git Graph is now using ' +
+							gitExecutable.path +
+							' (version: ' +
+							gitExecutable.version +
+							')';
+						showInformationMessage(msg);
+						logger.log(msg);
+						repoManager.searchWorkspaceForRepos();
+					},
+					() => {
+						const msg =
+							'The new value of "git.path" ("' +
+							paths.join('", "') +
+							'") does not ' +
+							(paths.length > 1
+								? 'contain a string that matches'
+								: 'match') +
+							' the path and filename of a valid Git executable.';
+						showErrorMessage(msg);
+						logger.logError(msg);
+					}
+				);
+			}
+		}),
+		diffDocProvider,
+		commandManager,
+		statusBarItem,
+		repoManager,
+		avatarManager,
+		dataSource,
+		configurationEmitter,
+		extensionState,
+		gitExecutableEmitter,
+		logger,
 
-            // 监听分支引用变化（创建/删除分支）
-            const refsWatcher = vscode.workspace.createFileSystemWatcher(
-                new vscode.RelativePattern(folder, '.git/refs/heads/**')
-            );
+		// 注册侧边栏 TreeDataProvider
+		vscode.window.registerTreeDataProvider(
+			'gitly.sidebar.branches',
+			branchSidebarProvider
+		),
+		vscode.window.registerTreeDataProvider(
+			'gitly.sidebar.history',
+			historySidebarProvider
+		),
+		vscode.window.registerTreeDataProvider(
+			'gitly.sidebar.conflicts',
+			conflictSidebarProvider
+		),
 
-            headWatcher.onDidChange(debouncedRefresh);
-            headWatcher.onDidCreate(debouncedRefresh);
-            refsWatcher.onDidChange(debouncedRefresh);
-            refsWatcher.onDidCreate(debouncedRefresh);
-            refsWatcher.onDidDelete(debouncedRefresh);
+		// 侧边栏刷新命令
+		vscode.commands.registerCommand('gitly.sidebar.refreshBranches', () => {
+			branchSidebarProvider.refresh();
+		}),
+		vscode.commands.registerCommand('gitly.sidebar.refreshHistory', () => {
+			historySidebarProvider.refresh();
+		}),
+		vscode.commands.registerCommand('gitly.sidebar.refreshConflicts', () => {
+			conflictSidebarProvider.refresh();
+		}),
 
-            context.subscriptions.push(headWatcher, refsWatcher);
-        });
-    }
+		// 从侧边栏打开 Git Graph 主视图
+		vscode.commands.registerCommand('gitly.sidebar.openGitGraph', () => {
+			void vscode.commands.executeCommand('gitly.view');
+		}),
 
-    // 自动检测冲突
-    const config = vscode.workspace.getConfiguration('git-assistant');
-    if (config.get('conflictHighlight')) {
-        context.subscriptions.push(
-            vscode.workspace.onDidOpenTextDocument((document) => {
-                conflictProvider.checkConflicts(document);
-            })
-        );
-    }
+		// 从侧边栏切换分支
+		vscode.commands.registerCommand(
+			'gitly.sidebar.checkoutBranch',
+			async (item: any) => {
+				if (!item || typeof item !== 'object' || !item.repo) return;
 
-    // 欢迎消息
-    vscode.window.showInformationMessage('Git Assistant 已就绪！使用 Ctrl+Alt+P 快速推送');
+				const repo: string = item.repo;
+				const rawName: string | undefined =
+					(item.data && item.data.branchName) || item.label;
+				if (!rawName) return;
+
+				let localBranch = rawName;
+				let remoteBranch: string | null = null;
+				let displayName = rawName;
+
+				// 支持远程分支：remotes/origin/feature/xxx
+				if (rawName.startsWith('remotes/')) {
+					const withoutPrefix = rawName.replace(/^remotes\//, '');
+					displayName = withoutPrefix;
+					const parts = withoutPrefix.split('/');
+					if (parts.length >= 2) {
+						const remote = parts.shift()!; // origin
+						const short = parts.join('/'); // feature/xxx
+						localBranch = short;
+						remoteBranch = `${remote}/${short}`;
+					}
+				}
+
+				// 显示确认对话框
+				const confirm = await vscode.window.showWarningMessage(
+					`是否切换到分支 "${displayName}"？`,
+					{ modal: true },
+					'是',
+					'否'
+				);
+
+				if (confirm !== '是') {
+					return;
+				}
+
+				const error = await dataSource.checkoutBranch(repo, localBranch, remoteBranch);
+				if (error !== null) {
+					vscode.window.showErrorMessage(error);
+				} else {
+					vscode.window.showInformationMessage(
+						`已切换到分支 "${displayName}"`
+					);
+					branchSidebarProvider.refresh();
+					historySidebarProvider.refresh();
+					conflictSidebarProvider.refresh();
+				}
+			}
+		)
+	);
+
+	// 激活扩展后自动切换到 Gitly 侧边栏视图容器
+	void vscode.commands.executeCommand('workbench.view.extension.gitly-sidebar');
+
+	// Assistant 面板命令
+	context.subscriptions.push(
+		vscode.commands.registerCommand('gitly.openAssistant', () => {
+			assistantPanel.show();
+		})
+	);
+
+	// Assistant 快捷指令（git-assistant.*）
+	registerAssistantCommands(context, repoManager, dataSource, extensionState);
+
+	logger.log('Started Git Graph - Ready to use!');
+
+	extensionState.expireOldCodeReviews();
+	onStartUp(context).catch(() => { });
 }
 
 /**
- * 扩展停用函数
+ * Deactivate Git Graph.
  */
-export function deactivate() {
-    Logger.info('Git Assistant 扩展已停用');
-    Logger.dispose();
-}
-
+export function deactivate() { }
