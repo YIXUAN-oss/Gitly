@@ -20,8 +20,8 @@ import {
 import { EventEmitter } from './utils/event';
 import {
 	BranchSidebarProvider,
-	HistorySidebarProvider,
 	ConflictSidebarProvider,
+	HistorySidebarProvider,
 	StagedSidebarProvider
 } from './sidebarViews';
 import { AssistantPanel } from './assistantPanel';

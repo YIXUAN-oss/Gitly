@@ -30,7 +30,7 @@
 	"license": "SEE LICENSE IN 'LICENSE'",
 	"icon": "resources/icon.png",
 	"engines": {
-		"vscode": "^1.38.0"
+		"vscode": "^1.107.0"
 	},
 	"extensionKind": [
 		"workspace"
@@ -87,7 +87,6 @@
 		"onView:gitly.sidebar.conflicts",
 		"onView:gitly.sidebar.staged"
 	],
-
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
@@ -1818,26 +1817,27 @@
 		"watch:src": "tsc -p ./src -w",
 		"watch:web": "tsc -p ./web -w",
 		"watch:assistant": "tsc -p ./web/assistant/tsconfig.json -w",
-		"lint": "eslint -c .eslintrc.json --max-warnings 9999 --ext .ts ./src ./tests ./web",
-		"lint:json": "eslint -c .eslintrc.json --max-warnings 9999 --ext .ts ./src ./tests ./web -f json -o eslint-run.json",
+		"lint": "eslint --max-warnings 20000 --ext .ts ./src ./tests ./web",
+		"lint:json": "eslint --max-warnings 20000 --ext .ts ./src ./tests ./web -f json -o eslint-run.json",
 		"package": "vsce package",
 		"package-and-install": "npm run package && node ./.vscode/install-package.js",
 		"test": "jest --verbose",
 		"test-and-report-coverage": "jest --verbose --coverage"
 	},
 	"dependencies": {
-		"iconv-lite": "0.5.0"
+		"iconv-lite": "0.7.1"
 	},
 	"devDependencies": {
-		"@types/jest": "26.0.19",
-		"@types/node": "8.10.62",
-		"@types/vscode": "1.38.0",
-		"@typescript-eslint/eslint-plugin": "4.10.0",
-		"@typescript-eslint/parser": "4.10.0",
-		"eslint": "7.15.0",
-		"jest": "26.6.3",
-		"ts-jest": "26.4.4",
-		"typescript": "^4.9.5",
-		"uglify-js": "3.10.0"
+		"@types/jest": "30.0.0",
+		"@types/node": "25.0.3",
+		"@types/vscode": "1.107.0",
+		"@typescript-eslint/eslint-plugin": "8.50.0",
+		"@typescript-eslint/parser": "8.50.0",
+		"cross-env": "^10.1.0",
+		"eslint": "9.39.2",
+		"jest": "30.2.0",
+		"ts-jest": "29.4.6",
+		"typescript": "^5.9.3",
+		"uglify-js": "3.19.3"
 	}
 }

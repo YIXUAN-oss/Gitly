@@ -2,72 +2,72 @@
  * 命令历史组件 - 显示已执行的快捷指令（分类显示）
  */
 
-import { t, getCurrentLanguage } from '../i18n.js';
+import { getCurrentLanguage, t } from '../i18n.js';
 
 import { convertGitUrlToBrowserUrl } from '../utils/url.js';
 import { escapeHtml } from '../utils/dom-utils.js';
-import { GitData, CommandHistoryItem, Command, Category, RepositoryState } from '../types/git.js';
+import { Category, Command, CommandHistoryItem, GitData, RepositoryState } from '../types/git.js';
 
 // 类型定义已移至 web/types/git.ts
 
 export class CommandHistoryComponent {
-    private container: HTMLElement;
-    private data: GitData | null = null;
-    private expandedCategories: Set<string> = new Set();
-    private isClearingHistory: boolean = false;
-    private previousHistoryLength: number = 0;
+	private container: HTMLElement;
+	private data: GitData | null = null;
+	private expandedCategories: Set<string> = new Set();
+	private isClearingHistory: boolean = false;
+	private previousHistoryLength: number = 0;
 
-    constructor(containerId: string) {
-        const container = document.getElementById(containerId);
-        if (!container) {
-            throw new Error(`Container ${containerId} not found`);
-        }
-        this.container = container;
-    }
+	constructor(containerId: string) {
+		const container = document.getElementById(containerId);
+		if (!container) {
+			throw new Error(`Container ${containerId} not found`);
+		}
+		this.container = container;
+	}
 
-    remount(containerId: string, data: GitData | null) {
-        const container = document.getElementById(containerId);
-        if (!container) {
-            throw new Error(`Container ${containerId} not found`);
-        }
-        this.container = container;
-        this.render(data);
-    }
+	public remount(containerId: string, data: GitData | null) {
+		const container = document.getElementById(containerId);
+		if (!container) {
+			throw new Error(`Container ${containerId} not found`);
+		}
+		this.container = container;
+		this.render(data);
+	}
 
-    render(data: GitData | null) {
-        const previousHistoryLength = this.previousHistoryLength;
-        this.data = data;
-        if (!data) {
-            this.container.innerHTML = `<div class="empty-state"><p>${t('common.loading')}</p></div>`;
-            return;
-        }
+	public render(data: GitData | null) {
+		const previousHistoryLength = this.previousHistoryLength;
+		this.data = data;
+		if (!data) {
+			this.container.innerHTML = `<div class="empty-state"><p>${t('common.loading')}</p></div>`;
+			return;
+		}
 
-        // 检查历史是否已清空（在渲染前检查，确保状态正确恢复）
-        const history = data?.commandHistory || [];
-        // 如果历史为空且正在清空状态，重置清空状态
-        // 或者如果历史为空且之前也为空，确保清空状态为 false（处理历史本来就为空时点击清空的情况）
-        if (history.length === 0) {
-            if (this.isClearingHistory) {
-                // 历史已清空，重置清空状态
-                this.isClearingHistory = false;
-            } else if (previousHistoryLength === 0) {
-                // 历史本来就为空，确保清空状态为 false（防止状态异常）
-                this.isClearingHistory = false;
-            }
-        }
-        this.previousHistoryLength = history.length;
+		// 检查历史是否已清空（在渲染前检查，确保状态正确恢复）
+		const history = data?.commandHistory || [];
+		// 如果历史为空且正在清空状态，重置清空状态
+		// 或者如果历史为空且之前也为空，确保清空状态为 false（处理历史本来就为空时点击清空的情况）
+		if (history.length === 0) {
+			if (this.isClearingHistory) {
+				// 历史已清空，重置清空状态
+				this.isClearingHistory = false;
+			} else if (previousHistoryLength === 0) {
+				// 历史本来就为空，确保清空状态为 false（防止状态异常）
+				this.isClearingHistory = false;
+			}
+		}
+		this.previousHistoryLength = history.length;
 
-        this.container.innerHTML = this.getHtml();
-        this.attachEventListeners();
-    }
+		this.container.innerHTML = this.getHtml();
+		this.attachEventListeners();
+	}
 
-    private getHtml(): string {
-        const history = this.data?.commandHistory || [];
-        const commands = this.data?.availableCommands || [];
-        const categories = this.data?.categories || [];
-        const repositoryState = this.getRepositoryState();
+	private getHtml(): string {
+		const history = this.data?.commandHistory || [];
+		const commands = this.data?.availableCommands || [];
+		const categories = this.data?.categories || [];
+		const repositoryState = this.getRepositoryState();
 
-        return `
+		return `
             <div class="command-history">
                 ${this.getSectionHeader()}
                 ${this.getRepositoryStatusHtml(repositoryState)}
@@ -75,15 +75,15 @@ export class CommandHistoryComponent {
                 ${this.getHistoryHtml(history)}
             </div>
         `;
-    }
+	}
 
-    private formatCommandDescription(desc: string): string {
-        const safe = escapeHtml(desc || '');
-        return safe.replace(/\(([^)]+)\)\s*$/g, '<span class="command-cli">($1)</span>');
-    }
+	private formatCommandDescription(desc: string): string {
+		const safe = escapeHtml(desc || '');
+		return safe.replace(/\(([^)]+)\)\s*$/g, '<span class="command-cli">($1)</span>');
+	}
 
-    private getSectionHeader(): string {
-        return `
+	private getSectionHeader(): string {
+		return `
             <div class="section-header">
                 <div>
                     <h2>${t('commandHistory.title')}</h2>
@@ -93,51 +93,51 @@ export class CommandHistoryComponent {
                 </div>
             </div>
         `;
-    }
+	}
 
-    private getRepositoryState(): RepositoryState {
-        const data = this.data;
-        if (!data) {
-            return {
-                isRepository: false,
-                hasCommits: false,
-                hasConflicts: false,
-                hasRemote: false,
-                hasUncommittedChanges: false,
-                hasUnpushedCommits: false,
-                currentBranch: null
-            };
-        }
-        const isRepo = data.status !== undefined;
-        const hasCommits = (data.log?.all?.length || 0) > 0;
-        const hasConflicts = (data.status?.conflicted?.length || 0) > 0;
-        const hasRemote = data?.remotes && data.remotes.length > 0;
-        const hasUncommittedChanges = isRepo && data?.status && (
-            (data.status.modified && data.status.modified.length > 0) ||
+	private getRepositoryState(): RepositoryState {
+		const data = this.data;
+		if (!data) {
+			return {
+				isRepository: false,
+				hasCommits: false,
+				hasConflicts: false,
+				hasRemote: false,
+				hasUncommittedChanges: false,
+				hasUnpushedCommits: false,
+				currentBranch: null
+			};
+		}
+		const isRepo = data.status !== undefined;
+		const hasCommits = (data.log?.all?.length || 0) > 0;
+		const hasConflicts = (data.status?.conflicted?.length || 0) > 0;
+		const hasRemote = data?.remotes && data.remotes.length > 0;
+		const hasUncommittedChanges = isRepo && data?.status && (
+			(data.status.modified && data.status.modified.length > 0) ||
             (data.status.created && data.status.created.length > 0) ||
             (data.status.deleted && data.status.deleted.length > 0) ||
             (data.status.not_added && data.status.not_added.length > 0)
-        );
-        const hasUnpushedCommits = isRepo && data?.status && data.status.ahead > 0;
-        const currentBranch = data?.currentBranch || data?.branches?.current || null;
+		);
+		const hasUnpushedCommits = isRepo && data?.status && data.status.ahead > 0;
+		const currentBranch = data?.currentBranch || data?.branches?.current || null;
 
-        return {
-            isRepository: isRepo || false,
-            hasCommits: hasCommits || false,
-            hasConflicts: hasConflicts || false,
-            hasRemote: hasRemote || false,
-            hasUncommittedChanges: hasUncommittedChanges || false,
-            hasUnpushedCommits: hasUnpushedCommits || false,
-            currentBranch: currentBranch || null
-        };
-    }
+		return {
+			isRepository: isRepo || false,
+			hasCommits: hasCommits || false,
+			hasConflicts: hasConflicts || false,
+			hasRemote: hasRemote || false,
+			hasUncommittedChanges: hasUncommittedChanges || false,
+			hasUnpushedCommits: hasUnpushedCommits || false,
+			currentBranch: currentBranch || null
+		};
+	}
 
-    private getRepositoryStatusHtml(state: RepositoryState): string {
-        const data = this.data;
-        const remotes = data?.remotes || [];
-        const lang = getCurrentLanguage();
+	private getRepositoryStatusHtml(state: RepositoryState): string {
+		const data = this.data;
+		const remotes = data?.remotes || [];
+		const lang = getCurrentLanguage();
 
-        return `
+		return `
             <div class="repository-status ${state.isRepository ? 'active' : 'warning'}">
                 <div class="status-header">
                     <strong>📌 ${t('commandHistory.repoStatusTitle')}</strong>
@@ -163,10 +163,10 @@ export class CommandHistoryComponent {
                                 ${remotes.length > 0 ? `
                                     <div class="remote-list">
                                         ${remotes.map((remote: any) => {
-            const remoteUrl = remote.refs?.fetch || remote.refs?.push || '';
-            const browserUrl = convertGitUrlToBrowserUrl(remoteUrl);
-            const isOrigin = remote.name === 'origin';
-            return `
+		const remoteUrl = remote.refs?.fetch || remote.refs?.push || '';
+		const browserUrl = convertGitUrlToBrowserUrl(remoteUrl);
+		const isOrigin = remote.name === 'origin';
+		return `
                                                 <div class="remote-item ${browserUrl ? 'clickable' : ''} ${isOrigin ? 'active' : ''}" 
                                                      data-remote-url="${browserUrl || ''}"
                                                      title="${browserUrl ? `${t('commandHistory.openRemoteTooltipPrefix')}${browserUrl}` : t('commandHistory.openRemoteTooltipUnsupported')}">
@@ -178,7 +178,7 @@ export class CommandHistoryComponent {
                                                     ${browserUrl ? `<button class="remote-open-btn">${lang === 'zh-CN' ? '打开 →' : 'Open →'}</button>` : ''}
                                                 </div>
                                             `;
-        }).join('')}
+	}).join('')}
                                     </div>
                                 ` : ''}
                             </div>
@@ -194,29 +194,29 @@ export class CommandHistoryComponent {
                 </div>
             </div>
         `;
-    }
+	}
 
-    private getCommandsByCategoryHtml(categories: Category[], commands: Command[], state: RepositoryState): string {
-        const lang = getCurrentLanguage();
-        return `
+	private getCommandsByCategoryHtml(categories: Category[], commands: Command[], state: RepositoryState): string {
+		const lang = getCurrentLanguage();
+		return `
             <div class="commands-section">
                 <h3>${t('commandHistory.availableCommands')}</h3>
                 ${categories.map(category => {
-            const categoryCommands = commands.filter(cmd => cmd.category === category.id);
-            const availableCommands = categoryCommands.filter(cmd => this.isCommandAvailable(cmd, state));
+		const categoryCommands = commands.filter(cmd => cmd.category === category.id);
+		const availableCommands = categoryCommands.filter(cmd => this.isCommandAvailable(cmd, state));
 
-            if (availableCommands.length === 0) {
-                return '';
-            }
+		if (availableCommands.length === 0) {
+			return '';
+		}
 
-            const isExpanded = this.expandedCategories.has(category.id);
+		const isExpanded = this.expandedCategories.has(category.id);
 
-            const categoryNameKey = `category.${category.id}.name`;
-            const categoryDescKey = `category.${category.id}.description`;
-            const categoryName = t(categoryNameKey, category.name);
-            const categoryDesc = t(categoryDescKey, category.description);
+		const categoryNameKey = `category.${category.id}.name`;
+		const categoryDescKey = `category.${category.id}.description`;
+		const categoryName = t(categoryNameKey, category.name);
+		const categoryDesc = t(categoryDescKey, category.description);
 
-            return `
+		return `
                         <div class="category-card">
                             <div class="category-header" data-category-id="${category.id}">
                                 <div class="category-info">
@@ -232,15 +232,15 @@ export class CommandHistoryComponent {
                                 <div class="category-content">
                                     <div class="commands-grid">
                                         ${categoryCommands.map(cmd => {
-                const isAvailable = this.isCommandAvailable(cmd, state);
-                const cmdNameKey = `command.${cmd.id}.name`;
-                const cmdDescKey = `command.${cmd.id}.description`;
-                const cmdName = t(cmdNameKey, cmd.name);
-                const cmdDesc = t(cmdDescKey, cmd.description);
-                const titleText = !isAvailable
-                    ? t('commandHistory.unavailableCommandTooltip')
-                    : escapeHtml(cmdDesc || '');
-                return `
+		const isAvailable = this.isCommandAvailable(cmd, state);
+		const cmdNameKey = `command.${cmd.id}.name`;
+		const cmdDescKey = `command.${cmd.id}.description`;
+		const cmdName = t(cmdNameKey, cmd.name);
+		const cmdDesc = t(cmdDescKey, cmd.description);
+		const titleText = !isAvailable
+			? t('commandHistory.unavailableCommandTooltip')
+			: escapeHtml(cmdDesc || '');
+		return `
                                                 <div class="command-card ${isAvailable ? 'available' : 'unavailable'}" 
                                                      data-command-id="${isAvailable ? cmd.id : ''}"
                                                      title="${titleText}">
@@ -254,19 +254,19 @@ export class CommandHistoryComponent {
                                                     </div>
                                                 </div>
                                             `;
-            }).join('')}
+	}).join('')}
                                     </div>
                                 </div>
                             ` : ''}
                         </div>
                     `;
-        }).join('')}
+	}).join('')}
             </div>
         `;
-    }
+	}
 
-    private getHistoryHtml(history: CommandHistoryItem[]): string {
-        return `
+	private getHistoryHtml(history: CommandHistoryItem[]): string {
+		return `
             <div class="history-section">
                 <div class="history-header">
                     <h3>${t('commandHistory.historyTitle')}</h3>
@@ -306,117 +306,117 @@ export class CommandHistoryComponent {
                 `}
             </div>
         `;
-    }
+	}
 
-    private attachEventListeners() {
-        // 分类折叠/展开
-        this.container.querySelectorAll('.category-header').forEach(header => {
-            header.addEventListener('click', (e) => {
-                const categoryId = (e.currentTarget as HTMLElement).dataset.categoryId;
-                if (categoryId) {
-                    this.toggleCategory(categoryId);
-                }
-            });
-        });
+	private attachEventListeners() {
+		// 分类折叠/展开
+		this.container.querySelectorAll('.category-header').forEach(header => {
+			header.addEventListener('click', (e) => {
+				const categoryId = (e.currentTarget as HTMLElement).dataset.categoryId;
+				if (categoryId) {
+					this.toggleCategory(categoryId);
+				}
+			});
+		});
 
-        // 命令执行
-        this.container.querySelectorAll('.command-card.available').forEach(card => {
-            card.addEventListener('click', (e) => {
-                const commandId = (e.currentTarget as HTMLElement).dataset.commandId;
-                if (commandId && window.vscode) {
-                    window.vscode.postMessage({ command: 'executeCommand', commandId });
-                }
-            });
-        });
+		// 命令执行
+		this.container.querySelectorAll('.command-card.available').forEach(card => {
+			card.addEventListener('click', (e) => {
+				const commandId = (e.currentTarget as HTMLElement).dataset.commandId;
+				if (commandId && window.vscode) {
+					window.vscode.postMessage({ command: 'executeCommand', commandId });
+				}
+			});
+		});
 
-        // 清空历史
-        const clearBtn = this.container.querySelector('#clear-history-btn');
-        if (clearBtn) {
-            clearBtn.addEventListener('click', () => {
-                const history = this.data?.commandHistory || [];
-                // 如果历史已经为空，不需要执行清空操作
-                if (history.length === 0) {
-                    return;
-                }
-                if (window.vscode && !this.isClearingHistory) {
-                    this.isClearingHistory = true;
-                    this.render(this.data);
-                    window.vscode.postMessage({ command: 'clearHistory' });
-                }
-            });
-        }
+		// 清空历史
+		const clearBtn = this.container.querySelector('#clear-history-btn');
+		if (clearBtn) {
+			clearBtn.addEventListener('click', () => {
+				const history = this.data?.commandHistory || [];
+				// 如果历史已经为空，不需要执行清空操作
+				if (history.length === 0) {
+					return;
+				}
+				if (window.vscode && !this.isClearingHistory) {
+					this.isClearingHistory = true;
+					this.render(this.data);
+					window.vscode.postMessage({ command: 'clearHistory' });
+				}
+			});
+		}
 
-        // 远程仓库链接
-        this.container.querySelectorAll('.remote-item.clickable').forEach(item => {
-            item.addEventListener('click', (e) => {
-                // 如果点击的是按钮，不阻止默认行为，让按钮处理
-                if ((e.target as HTMLElement).closest('.remote-open-btn')) {
-                    return;
-                }
-                const url = (e.currentTarget as HTMLElement).dataset.remoteUrl;
-                if (url && window.vscode) {
-                    window.vscode.postMessage({ command: 'openRemoteUrl', url });
-                }
-            });
-        });
+		// 远程仓库链接
+		this.container.querySelectorAll('.remote-item.clickable').forEach(item => {
+			item.addEventListener('click', (e) => {
+				// 如果点击的是按钮，不阻止默认行为，让按钮处理
+				if ((e.target as HTMLElement).closest('.remote-open-btn')) {
+					return;
+				}
+				const url = (e.currentTarget as HTMLElement).dataset.remoteUrl;
+				if (url && window.vscode) {
+					window.vscode.postMessage({ command: 'openRemoteUrl', url });
+				}
+			});
+		});
 
-        // 远程仓库打开按钮
-        this.container.querySelectorAll('.remote-open-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const item = (e.currentTarget as HTMLElement).closest('.remote-item');
-                if (item) {
-                    const url = item.getAttribute('data-remote-url');
-                    if (url && window.vscode) {
-                        window.vscode.postMessage({ command: 'openRemoteUrl', url });
-                    }
-                }
-            });
-        });
+		// 远程仓库打开按钮
+		this.container.querySelectorAll('.remote-open-btn').forEach(btn => {
+			btn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const item = (e.currentTarget as HTMLElement).closest('.remote-item');
+				if (item) {
+					const url = item.getAttribute('data-remote-url');
+					if (url && window.vscode) {
+						window.vscode.postMessage({ command: 'openRemoteUrl', url });
+					}
+				}
+			});
+		});
 
-    }
+	}
 
-    private toggleCategory(categoryId: string) {
-        if (this.expandedCategories.has(categoryId)) {
-            this.expandedCategories.delete(categoryId);
-        } else {
-            this.expandedCategories.add(categoryId);
-        }
-        this.render(this.data);
-    }
+	private toggleCategory(categoryId: string) {
+		if (this.expandedCategories.has(categoryId)) {
+			this.expandedCategories.delete(categoryId);
+		} else {
+			this.expandedCategories.add(categoryId);
+		}
+		this.render(this.data);
+	}
 
-    private isCommandAvailable(command: Command, state: RepositoryState): boolean {
-        const { requires } = command;
-        const { isRepository, hasCommits, hasConflicts } = state;
+	private isCommandAvailable(command: Command, state: RepositoryState): boolean {
+		const { requires } = command;
+		const { isRepository, hasCommits, hasConflicts } = state;
 
-        switch (requires) {
-            case 'none':
-                return true;
-            case 'repository':
-                return isRepository;
-            case 'commits':
-                return isRepository && hasCommits;
-            case 'conflicts':
-                return isRepository && hasConflicts;
-            default:
-                return true;
-        }
-    }
+		switch (requires) {
+			case 'none':
+				return true;
+			case 'repository':
+				return isRepository;
+			case 'commits':
+				return isRepository && hasCommits;
+			case 'conflicts':
+				return isRepository && hasConflicts;
+			default:
+				return true;
+		}
+	}
 
-    private formatTime(timestamp: number): string {
-        const date = new Date(timestamp);
-        const now = new Date();
-        const diff = now.getTime() - date.getTime();
-        const minutes = Math.floor(diff / 60000);
-        const hours = Math.floor(diff / 3600000);
-        const days = Math.floor(diff / 86400000);
+	private formatTime(timestamp: number): string {
+		const date = new Date(timestamp);
+		const now = new Date();
+		const diff = now.getTime() - date.getTime();
+		const minutes = Math.floor(diff / 60000);
+		const hours = Math.floor(diff / 3600000);
+		const days = Math.floor(diff / 86400000);
 
-        const lang = getCurrentLanguage();
-        if (minutes < 1) return t('commandHistory.justNow');
-        if (minutes < 60) return t('commandHistory.minutesAgo').replace('%s1', String(minutes));
-        if (hours < 24) return t('commandHistory.hoursAgo').replace('%s1', String(hours));
-        if (days < 7) return t('commandHistory.daysAgo').replace('%s1', String(days));
-        const locale = lang === 'zh-CN' ? 'zh-CN' : 'en-US';
-        return date.toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-    }
+		const lang = getCurrentLanguage();
+		if (minutes < 1) return t('commandHistory.justNow');
+		if (minutes < 60) return t('commandHistory.minutesAgo').replace('%s1', String(minutes));
+		if (hours < 24) return t('commandHistory.hoursAgo').replace('%s1', String(hours));
+		if (days < 7) return t('commandHistory.daysAgo').replace('%s1', String(days));
+		const locale = lang === 'zh-CN' ? 'zh-CN' : 'en-US';
+		return date.toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+	}
 }

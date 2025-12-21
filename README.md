@@ -3,8 +3,8 @@
 <div align="center">
   <img src="resources/icon.png" alt="Gitly 图标" width="200" />
   <p>
-    <a href="https://github.com/YIXUAN-oss/CodeGitAssistant/releases/tag/v1.0.1">
-      <img src="https://img.shields.io/badge/version-1.0.1-blue.svg" alt="Version" />
+    <a href="https://github.com/YIXUAN-oss/Gitly/releases/tag/v1.1.0">
+      <img src="https://img.shields.io/badge/version-1.1.0-blue.svg" alt="Version" />
     </a>
     <a href="LICENSE">
       <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License" />
@@ -14,6 +14,7 @@
     </a>
   </p>
 </div>
+
 
 > Gitly 是一款为 VS Code 打造的 Git 历史可视化 + 操作控制面板扩展。通过图谱视图、侧边栏树形列表和 Webview 控制台，Gitly 将所有 Git 流程数字化并提供中文 / 英文双语支撑。
 
@@ -85,6 +86,7 @@ npm run package
    - `Ctrl+Alt+P`：快速推送
    - `Ctrl+Alt+L`：快速拉取
    - `Ctrl+Alt+B`：快速切换分支
+
 
 ## 📚 命令速查
 
@@ -197,10 +199,10 @@ npm run watch-tests
 
 ## 📌 路线图（规划）
 
-- v1.1.0：AI 辅助冲突解决、协作模板、自定义指令
-- v1.2.0：交互式 Rebase 助手、提交规范检查、智能冲突预防
-- v1.3.0：PR/MR 预览、智能回滚、子模块管理
-- v1.4.0+：多仓库管理、影响分析、性能报表导出
+- v1.2.0：AI 辅助冲突解决、协作模板、自定义指令
+- v1.3.0：交互式 Rebase 助手、提交规范检查、智能冲突预防
+- v1.4.0：PR/MR 预览、智能回滚、子模块管理
+- v1.5.0+：多仓库管理、影响分析、性能报表导出
 
 ## 📝 许可证与致谢
 
@@ -211,6 +213,6 @@ npm run watch-tests
 
 ## 📮 联系我们
 
-- Issues & Feature Requests：<https://github.com/YIXUAN-oss/CodeGitAssistant/issues>
-- Discussions：<https://github.com/YIXUAN-oss/CodeGitAssistant/discussions>
+- Issues & Feature Requests：<https://github.com/YIXUAN-oss/Gitly/issues>
+- Discussions：<https://github.com/YIXUAN-oss/Gitly/discussions>
 - 邮箱：byyi.xuan@outlook.com

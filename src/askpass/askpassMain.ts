@@ -9,7 +9,7 @@
 import * as fs from 'fs';
 import * as http from 'http';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function fatal(err: any): void {
 	// 使用 stderr 输出错误信息，避免直接使用 console，满足 eslint 规则
 	process.stderr.write('Missing or invalid credentials.\n');

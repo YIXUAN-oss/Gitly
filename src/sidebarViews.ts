@@ -44,60 +44,60 @@ const HISTORY_CACHE_TTL = 3000;
 // };
 
 function formatRelativeTime(date: number): string {
-    const diff = Date.now() - date;
-    const minute = 60 * 1000;
-    const hour = minute * 60;
-    const day = hour * 24;
+	const diff = Date.now() - date;
+	const minute = 60 * 1000;
+	const hour = minute * 60;
+	const day = hour * 24;
 
-    if (diff < minute) return 'just now';
-    if (diff < hour) return `${Math.floor(diff / minute)}m ago`;
-    if (diff < day) return `${Math.floor(diff / hour)}h ago`;
-    if (diff < 7 * day) return `${Math.floor(diff / day)}d ago`;
-    return new Date(date).toLocaleDateString();
+	if (diff < minute) return 'just now';
+	if (diff < hour) return `${Math.floor(diff / minute)}m ago`;
+	if (diff < day) return `${Math.floor(diff / hour)}h ago`;
+	if (diff < 7 * day) return `${Math.floor(diff / day)}d ago`;
+	return new Date(date).toLocaleDateString();
 }
 
 class SimpleTreeItem extends vscode.TreeItem {
-    public readonly repo: string;
-    public readonly data?: TreeItemData;
+	public readonly repo: string;
+	public readonly data?: TreeItemData;
 
-    constructor(
-        label: string,
-        collapsibleState: vscode.TreeItemCollapsibleState = vscode
-            .TreeItemCollapsibleState.None,
-        repo: string = '',
-        data?: TreeItemData
-    ) {
-        super(label, collapsibleState);
-        this.repo = repo;
-        this.data = data;
-    }
+	constructor(
+		label: string,
+		collapsibleState: vscode.TreeItemCollapsibleState = vscode
+			.TreeItemCollapsibleState.None,
+		repo: string = '',
+		data?: TreeItemData
+	) {
+		super(label, collapsibleState);
+		this.repo = repo;
+		this.data = data;
+	}
 }
 
 function getActiveRepo(
-    repos: GitRepoSet,
-    extensionState: ExtensionState
+	repos: GitRepoSet,
+	extensionState: ExtensionState
 ): SidebarContext | null {
-    const repoPaths = Object.keys(repos);
-    if (repoPaths.length === 0) return null;
+	const repoPaths = Object.keys(repos);
+	if (repoPaths.length === 0) return null;
 
-    const lastActive = extensionState.getLastActiveRepo();
-    if (lastActive && typeof repos[lastActive] !== 'undefined') {
-        return {
-            repo: lastActive,
-            repoName: repos[lastActive].name || getRepoName(lastActive)
-        };
-    }
+	const lastActive = extensionState.getLastActiveRepo();
+	if (lastActive && typeof repos[lastActive] !== 'undefined') {
+		return {
+			repo: lastActive,
+			repoName: repos[lastActive].name || getRepoName(lastActive)
+		};
+	}
 
-    const first = repoPaths[0];
-    return { repo: first, repoName: repos[first].name || getRepoName(first) };
+	const first = repoPaths[0];
+	return { repo: first, repoName: repos[first].name || getRepoName(first) };
 }
 
 export class BranchSidebarProvider implements vscode.TreeDataProvider<SimpleTreeItem> {
-    private readonly _onDidChangeTreeData = new vscode.EventEmitter<
+	private readonly _onDidChangeTreeData = new vscode.EventEmitter<
         SimpleTreeItem | undefined | null
     >();
-    public readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
-    private branchCache: {
+	public readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+	private branchCache: {
         repo: string;
         showRemoteBranches: boolean;
         hideRemotes: ReadonlyArray<string>;
@@ -105,54 +105,54 @@ export class BranchSidebarProvider implements vscode.TreeDataProvider<SimpleTree
         timestamp: number;
     } | null = null;
 
-    constructor(
+	constructor(
         private readonly repoManager: RepoManager,
         private readonly dataSource: DataSource,
         private readonly extensionState: ExtensionState
-    ) {
-        this.repoManager.onDidChangeRepos(() => this.refresh());
-    }
+	) {
+		this.repoManager.onDidChangeRepos(() => this.refresh());
+	}
 
-    public refresh(): void {
-        this.branchCache = null;
-        this._onDidChangeTreeData.fire();
-    }
+	public refresh(): void {
+		this.branchCache = null;
+		this._onDidChangeTreeData.fire(null);
+	}
 
-    public getTreeItem(element: SimpleTreeItem): vscode.TreeItem {
-        return element;
-    }
+	public getTreeItem(element: SimpleTreeItem): vscode.TreeItem {
+		return element;
+	}
 
-    public getChildren(
-        element?: SimpleTreeItem
-    ): vscode.ProviderResult<SimpleTreeItem[]> {
-        const repos = this.repoManager.getRepos();
-        const ctx = getActiveRepo(repos, this.extensionState);
-        if (!ctx) {
-            return [new SimpleTreeItem(t('sidebar.noRepos'))];
-        }
+	public getChildren(
+		element?: SimpleTreeItem
+	): vscode.ProviderResult<SimpleTreeItem[]> {
+		const repos = this.repoManager.getRepos();
+		const ctx = getActiveRepo(repos, this.extensionState);
+		if (!ctx) {
+			return [new SimpleTreeItem(t('sidebar.noRepos'))];
+		}
 
-        if (!element) {
-            return this.buildBranchGroups(ctx, repos[ctx.repo]);
-        }
+		if (!element) {
+			return this.buildBranchGroups(ctx, repos[ctx.repo]);
+		}
 
-        if (element.data?.branchGroup) {
-            return this.buildBranchesForGroup(
-                ctx,
-                repos[ctx.repo],
-                element.data.branchGroup
-            );
-        }
+		if (element.data?.branchGroup) {
+			return this.buildBranchesForGroup(
+				ctx,
+				repos[ctx.repo],
+				element.data.branchGroup
+			);
+		}
 
-        return [];
-    }
+		return [];
+	}
 
-    private async loadBranchInfo(
-        ctx: SidebarContext,
-        repoState: any
-    ): Promise<BranchInfo> {
-        const hideRemotes = repoState.hideRemotes || [];
-        const now = Date.now();
-        const cacheValid =
+	private async loadBranchInfo(
+		ctx: SidebarContext,
+		repoState: any
+	): Promise<BranchInfo> {
+		const hideRemotes = repoState.hideRemotes || [];
+		const now = Date.now();
+		const cacheValid =
             this.branchCache &&
             this.branchCache.repo === ctx.repo &&
             this.branchCache.showRemoteBranches ===
@@ -160,526 +160,526 @@ export class BranchSidebarProvider implements vscode.TreeDataProvider<SimpleTree
             this.branchCache.hideRemotes.join('|') === hideRemotes.join('|') &&
             now - this.branchCache.timestamp < BRANCH_CACHE_TTL;
 
-        if (cacheValid) {
-            return this.branchCache!.info;
-        }
+		if (cacheValid) {
+			return this.branchCache!.info;
+		}
 
-        const info = await this.dataSource
-            .getRepoInfo(
-                ctx.repo,
-                repoState.showRemoteBranches,
-                false,
-                hideRemotes
-            )
-            .then(
-                (res) =>
+		const info = await this.dataSource
+			.getRepoInfo(
+				ctx.repo,
+				repoState.showRemoteBranches,
+				false,
+				hideRemotes
+			)
+			.then(
+				(res) =>
                     ({
-                        branches: res.branches || [],
-                        head: res.head || null
+                    	branches: res.branches || [],
+                    	head: res.head || null
                     }) as BranchInfo
-            )
-            .catch(() => ({ branches: [], head: null }) as BranchInfo);
+			)
+			.catch(() => ({ branches: [], head: null }) as BranchInfo);
 
-        this.branchCache = {
-            repo: ctx.repo,
-            showRemoteBranches: repoState.showRemoteBranches,
-            hideRemotes,
-            info,
-            timestamp: now
-        };
+		this.branchCache = {
+			repo: ctx.repo,
+			showRemoteBranches: repoState.showRemoteBranches,
+			hideRemotes,
+			info,
+			timestamp: now
+		};
 
-        return info;
-    }
+		return info;
+	}
 
-    private async buildBranchGroups(
-        ctx: SidebarContext,
-        repoState: any
-    ): Promise<SimpleTreeItem[]> {
-        const info = await this.loadBranchInfo(ctx, repoState);
-        const localCount = info.branches.filter(
-            (b) => !b.startsWith('remotes/')
-        ).length;
-        const remoteCount = info.branches.length - localCount;
+	private async buildBranchGroups(
+		ctx: SidebarContext,
+		repoState: any
+	): Promise<SimpleTreeItem[]> {
+		const info = await this.loadBranchInfo(ctx, repoState);
+		const localCount = info.branches.filter(
+			(b) => !b.startsWith('remotes/')
+		).length;
+		const remoteCount = info.branches.length - localCount;
 
-        const localGroup = new SimpleTreeItem(
-            `${ctx.repoName}: ${t('sidebar.branches.local')}`,
-            vscode.TreeItemCollapsibleState.Expanded,
-            ctx.repo,
-            { branchGroup: 'local' }
-        );
-        localGroup.description = `${localCount}`;
-        localGroup.contextValue = 'git-graph-branch-group-local';
-        localGroup.iconPath = new (vscode as any).ThemeIcon('repo');
+		const localGroup = new SimpleTreeItem(
+			`${ctx.repoName}: ${t('sidebar.branches.local')}`,
+			vscode.TreeItemCollapsibleState.Expanded,
+			ctx.repo,
+			{ branchGroup: 'local' }
+		);
+		localGroup.description = `${localCount}`;
+		localGroup.contextValue = 'git-graph-branch-group-local';
+		localGroup.iconPath = new (vscode as any).ThemeIcon('repo');
 
-        const groups: SimpleTreeItem[] = [localGroup];
+		const groups: SimpleTreeItem[] = [localGroup];
 
-        if (repoState.showRemoteBranches) {
-            const remoteGroup = new SimpleTreeItem(
-                `${ctx.repoName}: ${t('sidebar.branches.remote')}`,
-                vscode.TreeItemCollapsibleState.Collapsed,
-                ctx.repo,
-                { branchGroup: 'remote' }
-            );
-            remoteGroup.description = `${remoteCount}`;
-            remoteGroup.contextValue = 'git-graph-branch-group-remote';
-            remoteGroup.iconPath = new (vscode as any).ThemeIcon('cloud');
-            groups.push(remoteGroup);
-        }
+		if (repoState.showRemoteBranches) {
+			const remoteGroup = new SimpleTreeItem(
+				`${ctx.repoName}: ${t('sidebar.branches.remote')}`,
+				vscode.TreeItemCollapsibleState.Collapsed,
+				ctx.repo,
+				{ branchGroup: 'remote' }
+			);
+			remoteGroup.description = `${remoteCount}`;
+			remoteGroup.contextValue = 'git-graph-branch-group-remote';
+			remoteGroup.iconPath = new (vscode as any).ThemeIcon('cloud');
+			groups.push(remoteGroup);
+		}
 
-        return groups;
-    }
+		return groups;
+	}
 
-    private async buildBranchesForGroup(
-        ctx: SidebarContext,
-        repoState: any,
-        group: BranchGroup
-    ): Promise<SimpleTreeItem[]> {
-        const info = await this.loadBranchInfo(ctx, repoState);
-        const branches =
+	private async buildBranchesForGroup(
+		ctx: SidebarContext,
+		repoState: any,
+		group: BranchGroup
+	): Promise<SimpleTreeItem[]> {
+		const info = await this.loadBranchInfo(ctx, repoState);
+		const branches =
             group === 'local'
-                ? info.branches.filter((b) => !b.startsWith('remotes/'))
-                : info.branches.filter((b) => b.startsWith('remotes/'));
+            	? info.branches.filter((b) => !b.startsWith('remotes/'))
+            	: info.branches.filter((b) => b.startsWith('remotes/'));
 
-        if (branches.length === 0) {
-            const label =
+		if (branches.length === 0) {
+			const label =
                 group === 'local'
-                    ? `${ctx.repoName}: ${t('sidebar.branches.noLocal')}`
-                    : `${ctx.repoName}: ${t('sidebar.branches.noRemote')}`;
-            return [
-                new SimpleTreeItem(
-                    label,
-                    vscode.TreeItemCollapsibleState.None,
-                    ctx.repo
-                )
-            ];
-        }
+                	? `${ctx.repoName}: ${t('sidebar.branches.noLocal')}`
+                	: `${ctx.repoName}: ${t('sidebar.branches.noRemote')}`;
+			return [
+				new SimpleTreeItem(
+					label,
+					vscode.TreeItemCollapsibleState.None,
+					ctx.repo
+				)
+			];
+		}
 
-        return branches.map((name) => {
-            const displayName =
+		return branches.map((name) => {
+			const displayName =
                 group === 'remote' ? name.replace(/^remotes\//, '') : name;
-            const item = new SimpleTreeItem(
-                displayName,
-                vscode.TreeItemCollapsibleState.None,
-                ctx.repo,
-                { branchName: name }
-            );
-            item.description = name === info.head ? t('sidebar.branches.current') : '';
-            item.tooltip = name;
-            item.contextValue =
+			const item = new SimpleTreeItem(
+				displayName,
+				vscode.TreeItemCollapsibleState.None,
+				ctx.repo,
+				{ branchName: name }
+			);
+			item.description = name === info.head ? t('sidebar.branches.current') : '';
+			item.tooltip = name;
+			item.contextValue =
                 group === 'remote'
-                    ? 'git-graph-branch-remote'
-                    : 'git-graph-branch-local';
-            item.iconPath =
+                	? 'git-graph-branch-remote'
+                	: 'git-graph-branch-local';
+			item.iconPath =
                 name === info.head
-                    ? new (vscode as any).ThemeIcon(
-                        'check',
-                        new vscode.ThemeColor(
-                            'gitDecoration.modifiedResourceForeground'
-                        )
-                    )
-                    : group === 'remote'
-                        ? new (vscode as any).ThemeIcon('cloud')
-                        : new (vscode as any).ThemeIcon('git-branch');
-            item.command = {
-                title: t('sidebar.branches.checkout'),
-                command: 'gitly.sidebar.checkoutBranch',
-                arguments: [item]
-            };
-            return item;
-        });
-    }
+                	? new (vscode as any).ThemeIcon(
+                		'check',
+                		new vscode.ThemeColor(
+                			'gitDecoration.modifiedResourceForeground'
+                		)
+                	)
+                	: group === 'remote'
+                		? new (vscode as any).ThemeIcon('cloud')
+                		: new (vscode as any).ThemeIcon('git-branch');
+			item.command = {
+				title: t('sidebar.branches.checkout'),
+				command: 'gitly.sidebar.checkoutBranch',
+				arguments: [item]
+			};
+			return item;
+		});
+	}
 }
 
 export class HistorySidebarProvider implements vscode.TreeDataProvider<SimpleTreeItem> {
-    private readonly _onDidChangeTreeData = new vscode.EventEmitter<
+	private readonly _onDidChangeTreeData = new vscode.EventEmitter<
         SimpleTreeItem | undefined | null
     >();
-    public readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
-    private historyCache: {
+	public readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+	private historyCache: {
         repo: string;
         commits: GitCommit[];
         timestamp: number;
     } | null = null;
 
-    constructor(
+	constructor(
         private readonly repoManager: RepoManager,
         private readonly dataSource: DataSource,
         private readonly extensionState: ExtensionState
-    ) {
-        this.repoManager.onDidChangeRepos(() => this.refresh());
-    }
+	) {
+		this.repoManager.onDidChangeRepos(() => this.refresh());
+	}
 
-    public refresh(): void {
-        this.historyCache = null;
-        this._onDidChangeTreeData.fire();
-    }
+	public refresh(): void {
+		this.historyCache = null;
+		this._onDidChangeTreeData.fire(null);
+	}
 
-    public getTreeItem(element: SimpleTreeItem): vscode.TreeItem {
-        return element;
-    }
+	public getTreeItem(element: SimpleTreeItem): vscode.TreeItem {
+		return element;
+	}
 
-    public getChildren(
-        element?: SimpleTreeItem
-    ): vscode.ProviderResult<SimpleTreeItem[]> {
-        const repos = this.repoManager.getRepos();
-        const ctx = getActiveRepo(repos, this.extensionState);
-        if (!ctx) {
-            return [new SimpleTreeItem(t('sidebar.noRepos'))];
-        }
+	public getChildren(
+		element?: SimpleTreeItem
+	): vscode.ProviderResult<SimpleTreeItem[]> {
+		const repos = this.repoManager.getRepos();
+		const ctx = getActiveRepo(repos, this.extensionState);
+		if (!ctx) {
+			return [new SimpleTreeItem(t('sidebar.noRepos'))];
+		}
 
-        if (element) {
-            return [];
-        }
+		if (element) {
+			return [];
+		}
 
-        const repoState = repos[ctx.repo];
-        const globalConfig = getConfig();
+		const repoState = repos[ctx.repo];
+		const globalConfig = getConfig();
 
-        return this.loadCommits(ctx, repoState, globalConfig).then(
-            (commits) => {
-                if (commits.length === 0) {
-                    const empty = new SimpleTreeItem(
-                        ctx.repoName + ': ' + t('sidebar.history.noCommits'),
-                        vscode.TreeItemCollapsibleState.None,
-                        ctx.repo
-                    );
-                    return [empty];
-                }
+		return this.loadCommits(ctx, repoState, globalConfig).then(
+			(commits) => {
+				if (commits.length === 0) {
+					const empty = new SimpleTreeItem(
+						ctx.repoName + ': ' + t('sidebar.history.noCommits'),
+						vscode.TreeItemCollapsibleState.None,
+						ctx.repo
+					);
+					return [empty];
+				}
 
-                return commits.map((c: GitCommit) => {
-                    const label = c.message || c.hash;
-                    const item = new SimpleTreeItem(
-                        label,
-                        vscode.TreeItemCollapsibleState.None,
-                        ctx.repo,
-                        { commitHash: c.hash }
-                    );
-                    item.description = `${c.hash.substring(0, 7)} · ${c.author || ''
-                        } · ${formatRelativeTime(c.date * 1000)}`;
-                    item.tooltip = `${c.message}\n\n${new Date(
-                        c.date * 1000
-                    ).toLocaleString()} - ${c.hash}`;
-                    item.contextValue = 'git-graph-history-commit';
-                    item.iconPath = new (vscode as any).ThemeIcon('git-commit');
-                    item.command = {
-                        title: t('sidebar.history.openGraph'),
-                        command: 'gitly.sidebar.openGitGraph',
-                        arguments: []
-                    };
-                    return item;
-                });
-            },
-            () => [
-                new SimpleTreeItem(
-                    t('sidebar.history.unableToLoad'),
-                    vscode.TreeItemCollapsibleState.None,
-                    ctx.repo
-                )
-            ]
-        );
-    }
+				return commits.map((c: GitCommit) => {
+					const label = c.message || c.hash;
+					const item = new SimpleTreeItem(
+						label,
+						vscode.TreeItemCollapsibleState.None,
+						ctx.repo,
+						{ commitHash: c.hash }
+					);
+					item.description = `${c.hash.substring(0, 7)} · ${c.author || ''
+					} · ${formatRelativeTime(c.date * 1000)}`;
+					item.tooltip = `${c.message}\n\n${new Date(
+						c.date * 1000
+					).toLocaleString()} - ${c.hash}`;
+					item.contextValue = 'git-graph-history-commit';
+					item.iconPath = new (vscode as any).ThemeIcon('git-commit');
+					item.command = {
+						title: t('sidebar.history.openGraph'),
+						command: 'gitly.sidebar.openGitGraph',
+						arguments: []
+					};
+					return item;
+				});
+			},
+			() => [
+				new SimpleTreeItem(
+					t('sidebar.history.unableToLoad'),
+					vscode.TreeItemCollapsibleState.None,
+					ctx.repo
+				)
+			]
+		);
+	}
 
-    private async loadCommits(
-        ctx: SidebarContext,
-        repoState: any,
-        globalConfig: ReturnType<typeof getConfig>
-    ): Promise<GitCommit[]> {
-        const includeCommitsMentionedByReflogs =
+	private async loadCommits(
+		ctx: SidebarContext,
+		repoState: any,
+		globalConfig: ReturnType<typeof getConfig>
+	): Promise<GitCommit[]> {
+		const includeCommitsMentionedByReflogs =
             repoState.includeCommitsMentionedByReflogs === 1
-                ? true
-                : repoState.includeCommitsMentionedByReflogs === 2
-                    ? false
-                    : globalConfig.includeCommitsMentionedByReflogs;
+            	? true
+            	: repoState.includeCommitsMentionedByReflogs === 2
+            		? false
+            		: globalConfig.includeCommitsMentionedByReflogs;
 
-        const onlyFollowFirstParent =
+		const onlyFollowFirstParent =
             repoState.onlyFollowFirstParent === 1
-                ? true
-                : repoState.onlyFollowFirstParent === 2
-                    ? false
-                    : globalConfig.onlyFollowFirstParent;
+            	? true
+            	: repoState.onlyFollowFirstParent === 2
+            		? false
+            		: globalConfig.onlyFollowFirstParent;
 
-        const showStashes =
+		const showStashes =
             repoState.showStashes === 1
-                ? true
-                : repoState.showStashes === 2
-                    ? false
-                    : globalConfig.showStashes;
+            	? true
+            	: repoState.showStashes === 2
+            		? false
+            		: globalConfig.showStashes;
 
-        const showRemoteBranches = repoState.showRemoteBranches;
-        const hideRemotes = repoState.hideRemotes || [];
+		const showRemoteBranches = repoState.showRemoteBranches;
+		const hideRemotes = repoState.hideRemotes || [];
 
-        const now = Date.now();
-        if (
-            this.historyCache &&
+		const now = Date.now();
+		if (
+			this.historyCache &&
             this.historyCache.repo === ctx.repo &&
             now - this.historyCache.timestamp < HISTORY_CACHE_TTL
-        ) {
-            return this.historyCache.commits;
-        }
+		) {
+			return this.historyCache.commits;
+		}
 
-        const info = await this.dataSource.getRepoInfo(
-            ctx.repo,
-            showRemoteBranches,
-            showStashes,
-            hideRemotes
-        );
-        const commitData = await this.dataSource.getCommits(
-            ctx.repo,
-            null,
-            50,
-            repoState.showTags === 1
-                ? true
-                : repoState.showTags === 2
-                    ? false
-                    : globalConfig.showTags,
-            showRemoteBranches,
-            includeCommitsMentionedByReflogs,
-            onlyFollowFirstParent,
-            globalConfig.commitOrder,
-            info.remotes,
-            hideRemotes,
-            info.stashes
-        );
+		const info = await this.dataSource.getRepoInfo(
+			ctx.repo,
+			showRemoteBranches,
+			showStashes,
+			hideRemotes
+		);
+		const commitData = await this.dataSource.getCommits(
+			ctx.repo,
+			null,
+			50,
+			repoState.showTags === 1
+				? true
+				: repoState.showTags === 2
+					? false
+					: globalConfig.showTags,
+			showRemoteBranches,
+			includeCommitsMentionedByReflogs,
+			onlyFollowFirstParent,
+			globalConfig.commitOrder,
+			info.remotes,
+			hideRemotes,
+			info.stashes
+		);
 
-        const commits = commitData.commits || [];
-        this.historyCache = { repo: ctx.repo, commits, timestamp: now };
-        return commits;
-    }
+		const commits = commitData.commits || [];
+		this.historyCache = { repo: ctx.repo, commits, timestamp: now };
+		return commits;
+	}
 }
 
 export class StagedSidebarProvider implements vscode.TreeDataProvider<SimpleTreeItem> {
-    private readonly _onDidChangeTreeData = new vscode.EventEmitter<SimpleTreeItem | undefined | null>();
-    public readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
-    private repoListeners: vscode.Disposable[] = [];
+	private readonly _onDidChangeTreeData = new vscode.EventEmitter<SimpleTreeItem | undefined | null>();
+	public readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+	private repoListeners: vscode.Disposable[] = [];
 
-    constructor(
+	constructor(
         private readonly repoManager: RepoManager,
         private readonly dataSource: DataSource,
         private readonly extensionState: ExtensionState,
         gitApi: any | null
-    ) {
-        this.repoManager.onDidChangeRepos(() => this.refresh());
-        this.attachGitApi(gitApi);
-    }
+	) {
+		this.repoManager.onDidChangeRepos(() => this.refresh());
+		this.attachGitApi(gitApi);
+	}
 
-    public attachGitApi(gitApi: any | null) {
-        this.disposeRepoListeners();
-        if (!gitApi) return;
+	public attachGitApi(gitApi: any | null) {
+		this.disposeRepoListeners();
+		if (!gitApi) return;
 
-        const repos: any[] = Array.isArray(gitApi.repositories) ? gitApi.repositories : [];
-        repos.forEach((repo) => this.registerRepo(repo));
+		const repos: any[] = Array.isArray(gitApi.repositories) ? gitApi.repositories : [];
+		repos.forEach((repo) => this.registerRepo(repo));
 
-        if (typeof gitApi.onDidOpenRepository === 'function') {
-            this.repoListeners.push(gitApi.onDidOpenRepository((repo: any) => this.registerRepo(repo)));
-        }
-        if (typeof gitApi.onDidCloseRepository === 'function') {
-            this.repoListeners.push(gitApi.onDidCloseRepository(() => this.refresh()));
-        }
-    }
+		if (typeof gitApi.onDidOpenRepository === 'function') {
+			this.repoListeners.push(gitApi.onDidOpenRepository((repo: any) => this.registerRepo(repo)));
+		}
+		if (typeof gitApi.onDidCloseRepository === 'function') {
+			this.repoListeners.push(gitApi.onDidCloseRepository(() => this.refresh()));
+		}
+	}
 
-    public refresh(): void {
-        this._onDidChangeTreeData.fire();
-    }
+	public refresh(): void {
+		this._onDidChangeTreeData.fire(undefined);
+	}
 
-    public getTreeItem(element: SimpleTreeItem): vscode.TreeItem {
-        return element;
-    }
+	public getTreeItem(element: SimpleTreeItem): vscode.TreeItem {
+		return element;
+	}
 
-    public getChildren(element?: SimpleTreeItem): vscode.ProviderResult<SimpleTreeItem[]> {
-        if (element) return [];
+	public getChildren(element?: SimpleTreeItem): vscode.ProviderResult<SimpleTreeItem[]> {
+		if (element) return [];
 
-        const repos = this.repoManager.getRepos();
-        const ctx = getActiveRepo(repos, this.extensionState);
-        if (!ctx) return [new SimpleTreeItem(t('sidebar.noRepos'))];
+		const repos = this.repoManager.getRepos();
+		const ctx = getActiveRepo(repos, this.extensionState);
+		if (!ctx) return [new SimpleTreeItem(t('sidebar.noRepos'))];
 
-        return this.buildStagedItems(ctx);
-    }
+		return this.buildStagedItems(ctx);
+	}
 
-    private async buildStagedItems(ctx: SidebarContext): Promise<SimpleTreeItem[]> {
-        const staged = await this.dataSource.getStagedChanges(ctx.repo);
-        if (!staged || staged.length === 0) {
-            const item = new SimpleTreeItem(
-                `${ctx.repoName}: ${t('sidebar.staged.none')}`,
-                vscode.TreeItemCollapsibleState.None,
-                ctx.repo
-            );
-            item.iconPath = new (vscode as any).ThemeIcon('pass');
-            item.contextValue = 'git-graph-staged-empty';
-            return [item];
-        }
+	private async buildStagedItems(ctx: SidebarContext): Promise<SimpleTreeItem[]> {
+		const staged = await this.dataSource.getStagedChanges(ctx.repo);
+		if (!staged || staged.length === 0) {
+			const item = new SimpleTreeItem(
+				`${ctx.repoName}: ${t('sidebar.staged.none')}`,
+				vscode.TreeItemCollapsibleState.None,
+				ctx.repo
+			);
+			item.iconPath = new (vscode as any).ThemeIcon('pass');
+			item.contextValue = 'git-graph-staged-empty';
+			return [item];
+		}
 
-        return staged.map((fc) => {
-            const filePath = fc.newFilePath || fc.oldFilePath;
-            const label = path.basename(filePath);
-            const item = new SimpleTreeItem(
-                label,
-                vscode.TreeItemCollapsibleState.None,
-                ctx.repo,
-                { filePath, fileStatus: fc.type }
-            );
-            item.description = vscode.workspace.asRelativePath(path.join(ctx.repo, filePath));
-            item.tooltip = `${filePath}`;
-            item.iconPath = this.getIconForStatus(fc.type);
-            item.contextValue = 'git-graph-staged-file';
-            item.command = {
-                command: 'vscode.open',
-                title: t('sidebar.staged.openFile'),
-                arguments: [vscode.Uri.file(path.join(ctx.repo, filePath))]
-            };
-            return item;
-        });
-    }
+		return staged.map((fc) => {
+			const filePath = fc.newFilePath || fc.oldFilePath;
+			const label = path.basename(filePath);
+			const item = new SimpleTreeItem(
+				label,
+				vscode.TreeItemCollapsibleState.None,
+				ctx.repo,
+				{ filePath, fileStatus: fc.type }
+			);
+			item.description = vscode.workspace.asRelativePath(path.join(ctx.repo, filePath));
+			item.tooltip = `${filePath}`;
+			item.iconPath = this.getIconForStatus(fc.type);
+			item.contextValue = 'git-graph-staged-file';
+			item.command = {
+				command: 'vscode.open',
+				title: t('sidebar.staged.openFile'),
+				arguments: [vscode.Uri.file(path.join(ctx.repo, filePath))]
+			};
+			return item;
+		});
+	}
 
-    private registerRepo(repo: any) {
-        if (!repo || !repo.state || typeof repo.state.onDidChange !== 'function') return;
-        this.repoListeners.push(repo.state.onDidChange(() => this.refresh()));
-    }
+	private registerRepo(repo: any) {
+		if (!repo || !repo.state || typeof repo.state.onDidChange !== 'function') return;
+		this.repoListeners.push(repo.state.onDidChange(() => this.refresh()));
+	}
 
-    private disposeRepoListeners() {
-        this.repoListeners.forEach((d) => d.dispose());
-        this.repoListeners = [];
-    }
+	private disposeRepoListeners() {
+		this.repoListeners.forEach((d) => d.dispose());
+		this.repoListeners = [];
+	}
 
-    private getIconForStatus(status: GitFileStatus | undefined) {
-        switch (status) {
-            case GitFileStatus.Added:
-                return new (vscode as any).ThemeIcon('diff-added');
-            case GitFileStatus.Modified:
-                return new (vscode as any).ThemeIcon('diff-modified');
-            case GitFileStatus.Deleted:
-                return new (vscode as any).ThemeIcon('diff-removed');
-            case GitFileStatus.Renamed:
-                return new (vscode as any).ThemeIcon('diff-renamed');
-            default:
-                return new (vscode as any).ThemeIcon('circle-large-outline');
-        }
-    }
+	private getIconForStatus(status: GitFileStatus | undefined) {
+		switch (status) {
+			case GitFileStatus.Added:
+				return new (vscode as any).ThemeIcon('diff-added');
+			case GitFileStatus.Modified:
+				return new (vscode as any).ThemeIcon('diff-modified');
+			case GitFileStatus.Deleted:
+				return new (vscode as any).ThemeIcon('diff-removed');
+			case GitFileStatus.Renamed:
+				return new (vscode as any).ThemeIcon('diff-renamed');
+			default:
+				return new (vscode as any).ThemeIcon('circle-large-outline');
+		}
+	}
 }
 
 export class ConflictSidebarProvider implements vscode.TreeDataProvider<SimpleTreeItem> {
-    private readonly _onDidChangeTreeData = new vscode.EventEmitter<
+	private readonly _onDidChangeTreeData = new vscode.EventEmitter<
         SimpleTreeItem | undefined | null
     >();
-    public readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+	public readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-    constructor(
+	constructor(
         private readonly repoManager: RepoManager,
         private readonly dataSource: DataSource,
         private readonly extensionState: ExtensionState
-    ) {
-        this.repoManager.onDidChangeRepos(() => this.refresh());
-    }
+	) {
+		this.repoManager.onDidChangeRepos(() => this.refresh());
+	}
 
-    public refresh(): void {
-        this._onDidChangeTreeData.fire();
-    }
+	public refresh(): void {
+		this._onDidChangeTreeData.fire(undefined);
+	}
 
-    public getTreeItem(element: SimpleTreeItem): vscode.TreeItem {
-        return element;
-    }
+	public getTreeItem(element: SimpleTreeItem): vscode.TreeItem {
+		return element;
+	}
 
-    public getChildren(
-        element?: SimpleTreeItem
-    ): vscode.ProviderResult<SimpleTreeItem[]> {
-        if (element) {
-            return [];
-        }
+	public getChildren(
+		element?: SimpleTreeItem
+	): vscode.ProviderResult<SimpleTreeItem[]> {
+		if (element) {
+			return [];
+		}
 
-        const repos = this.repoManager.getRepos();
-        const ctx = getActiveRepo(repos, this.extensionState);
-        if (!ctx) {
-            return [new SimpleTreeItem(t('sidebar.noRepos'))];
-        }
+		const repos = this.repoManager.getRepos();
+		const ctx = getActiveRepo(repos, this.extensionState);
+		if (!ctx) {
+			return [new SimpleTreeItem(t('sidebar.noRepos'))];
+		}
 
-        return this.dataSource.getUncommittedDetails(ctx.repo).then(
-            async (details) => {
-                const commitDetails = details.commitDetails;
+		return this.dataSource.getUncommittedDetails(ctx.repo).then(
+			async (details) => {
+				const commitDetails = details.commitDetails;
 
-                if (
-                    !commitDetails ||
+				if (
+					!commitDetails ||
                     !commitDetails.fileChanges ||
                     commitDetails.fileChanges.length === 0
-                ) {
-                    const clean = new SimpleTreeItem(
-                        ctx.repoName + ': ' + t('sidebar.conflicts.noConflicts'),
-                        vscode.TreeItemCollapsibleState.None,
-                        ctx.repo
-                    );
-                    clean.iconPath = new (vscode as any).ThemeIcon(
-                        'check',
-                        new vscode.ThemeColor('testing.iconPassed')
-                    );
-                    clean.contextValue = 'git-graph-conflict-clean';
-                    return [clean];
-                }
+				) {
+					const clean = new SimpleTreeItem(
+						ctx.repoName + ': ' + t('sidebar.conflicts.noConflicts'),
+						vscode.TreeItemCollapsibleState.None,
+						ctx.repo
+					);
+					clean.iconPath = new (vscode as any).ThemeIcon(
+						'check',
+						new vscode.ThemeColor('testing.iconPassed')
+					);
+					clean.contextValue = 'git-graph-conflict-clean';
+					return [clean];
+				}
 
-                // 检测冲突文件：检查文件内容中是否包含冲突标记
-                const conflictFiles: Array<{ filePath: string; fc: GitFileChange }> = [];
-                
-                for (const fc of commitDetails.fileChanges) {
-                    const filePath = fc.newFilePath || fc.oldFilePath;
-                    try {
-                        const fullPath = path.isAbsolute(filePath) 
-                            ? filePath 
-                            : path.join(ctx.repo, filePath);
-                        const fileUri = vscode.Uri.file(fullPath);
-                        const document = await vscode.workspace.openTextDocument(fileUri);
-                        const content = document.getText();
-                        
-                        // 检查是否包含冲突标记
-                        if (content.includes('<<<<<<<') && 
-                            content.includes('=======') && 
+				// 检测冲突文件：检查文件内容中是否包含冲突标记
+				const conflictFiles: Array<{ filePath: string; fc: GitFileChange }> = [];
+
+				for (const fc of commitDetails.fileChanges) {
+					const filePath = fc.newFilePath || fc.oldFilePath;
+					try {
+						const fullPath = path.isAbsolute(filePath)
+							? filePath
+							: path.join(ctx.repo, filePath);
+						const fileUri = vscode.Uri.file(fullPath);
+						const document = await vscode.workspace.openTextDocument(fileUri);
+						const content = document.getText();
+
+						// 检查是否包含冲突标记
+						if (content.includes('<<<<<<<') &&
+                            content.includes('=======') &&
                             content.includes('>>>>>>>')) {
-                            conflictFiles.push({ filePath, fc });
-                        }
-                    } catch {
-                        // 如果无法读取文件（可能已删除），跳过冲突检测
-                    }
-                }
+							conflictFiles.push({ filePath, fc });
+						}
+					} catch {
+						// 如果无法读取文件（可能已删除），跳过冲突检测
+					}
+				}
 
-                // 如果没有冲突文件，显示"当前没有冲突"
-                if (conflictFiles.length === 0) {
-                    const clean = new SimpleTreeItem(
-                        ctx.repoName + ': ' + t('sidebar.conflicts.noConflicts'),
-                        vscode.TreeItemCollapsibleState.None,
-                        ctx.repo
-                    );
-                    clean.iconPath = new (vscode as any).ThemeIcon(
-                        'check',
-                        new vscode.ThemeColor('testing.iconPassed')
-                    );
-                    clean.contextValue = 'git-graph-conflict-clean';
-                    return [clean];
-                }
+				// 如果没有冲突文件，显示"当前没有冲突"
+				if (conflictFiles.length === 0) {
+					const clean = new SimpleTreeItem(
+						ctx.repoName + ': ' + t('sidebar.conflicts.noConflicts'),
+						vscode.TreeItemCollapsibleState.None,
+						ctx.repo
+					);
+					clean.iconPath = new (vscode as any).ThemeIcon(
+						'check',
+						new vscode.ThemeColor('testing.iconPassed')
+					);
+					clean.contextValue = 'git-graph-conflict-clean';
+					return [clean];
+				}
 
-                // 只显示有冲突的文件
-                return conflictFiles.map(({ filePath, fc }) => {
-                    const item = new SimpleTreeItem(
-                        filePath,
-                        vscode.TreeItemCollapsibleState.None,
-                        ctx.repo,
-                        { filePath, fileStatus: fc.type }
-                    );
+				// 只显示有冲突的文件
+				return conflictFiles.map(({ filePath, fc }) => {
+					const item = new SimpleTreeItem(
+						filePath,
+						vscode.TreeItemCollapsibleState.None,
+						ctx.repo,
+						{ filePath, fileStatus: fc.type }
+					);
 
-                    item.description = t('sidebar.conflicts.conflict');
-                    item.tooltip = `${t('sidebar.conflicts.conflictFile')} · ${filePath}`;
-                    item.iconPath = new (vscode as any).ThemeIcon('warning');
-                    item.contextValue = 'git-graph-conflict-file';
-                    // 点击打开文件
-                    item.command = {
-                        command: 'vscode.open',
-                        title: t('sidebar.conflicts.openFile'),
-                        arguments: [vscode.Uri.file(path.isAbsolute(filePath) ? filePath : path.join(ctx.repo, filePath))]
-                    };
-                    return item;
-                });
-            },
-            () => [
-                new SimpleTreeItem(
-                    t('sidebar.conflicts.unableToLoad'),
-                    vscode.TreeItemCollapsibleState.None,
-                    ctx.repo
-                )
-            ]
-        );
-    }
+					item.description = t('sidebar.conflicts.conflict');
+					item.tooltip = `${t('sidebar.conflicts.conflictFile')} · ${filePath}`;
+					item.iconPath = new (vscode as any).ThemeIcon('warning');
+					item.contextValue = 'git-graph-conflict-file';
+					// 点击打开文件
+					item.command = {
+						command: 'vscode.open',
+						title: t('sidebar.conflicts.openFile'),
+						arguments: [vscode.Uri.file(path.isAbsolute(filePath) ? filePath : path.join(ctx.repo, filePath))]
+					};
+					return item;
+				});
+			},
+			() => [
+				new SimpleTreeItem(
+					t('sidebar.conflicts.unableToLoad'),
+					vscode.TreeItemCollapsibleState.None,
+					ctx.repo
+				)
+			]
+		);
+	}
 }

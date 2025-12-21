@@ -7,60 +7,60 @@ import { t } from '../i18n.js';
 import { GitData } from '../types/git.js';
 
 export class ConflictEditorComponent {
-    private container: HTMLElement;
-    private data: GitData | null = null;
-    private selectedFiles: Set<string> = new Set();
+	private container: HTMLElement;
+	private data: GitData | null = null;
+	private selectedFiles: Set<string> = new Set();
 
-    constructor(containerId: string) {
-        const container = document.getElementById(containerId);
-        if (!container) {
-            throw new Error(`Container ${containerId} not found`);
-        }
-        this.container = container;
-    }
+	constructor(containerId: string) {
+		const container = document.getElementById(containerId);
+		if (!container) {
+			throw new Error(`Container ${containerId} not found`);
+		}
+		this.container = container;
+	}
 
-    render(data: GitData | null) {
-        this.data = data;
-        // 清理已不存在的选中项
-        if (data?.conflicts) {
-            const conflictSet = new Set(data.conflicts);
-            this.selectedFiles.forEach((file) => {
-                if (!conflictSet.has(file)) {
-                    this.selectedFiles.delete(file);
-                }
-            });
-        } else {
-            this.selectedFiles.clear();
-        }
-        if (!data) {
-            this.container.innerHTML = '<div class="empty-state"><p>⚠️ 正在检测冲突...</p></div>';
-            return;
-        }
-        this.container.innerHTML = this.getHtml();
-        this.attachEventListeners();
-    }
+	public render(data: GitData | null) {
+		this.data = data;
+		// 清理已不存在的选中项
+		if (data?.conflicts) {
+			const conflictSet = new Set(data.conflicts);
+			this.selectedFiles.forEach((file) => {
+				if (!conflictSet.has(file)) {
+					this.selectedFiles.delete(file);
+				}
+			});
+		} else {
+			this.selectedFiles.clear();
+		}
+		if (!data) {
+			this.container.innerHTML = '<div class="empty-state"><p>⚠️ 正在检测冲突...</p></div>';
+			return;
+		}
+		this.container.innerHTML = this.getHtml();
+		this.attachEventListeners();
+	}
 
-    private getHtml(): string {
-        // 检查是否有仓库信息
-        const hasRepo = this.data?.repositoryInfo?.path && 
-            this.data.repositoryInfo.name !== '未检测到 Git 仓库' && 
+	private getHtml(): string {
+		// 检查是否有仓库信息
+		const hasRepo = this.data?.repositoryInfo?.path &&
+            this.data.repositoryInfo.name !== '未检测到 Git 仓库' &&
             this.data.repositoryInfo.name !== 'No Git repository detected';
-        
-        // 如果没有仓库，显示提示信息
-        if (!hasRepo) {
-            return `<div class="empty-state"><p>${t('conflict.initRepoHint')}</p></div>`;
-        }
 
-        // 如果 conflicts 字段不存在（undefined），说明还在检测中
-        if (this.data?.conflicts === undefined) {
-            return `<div class="empty-state"><p>${t('conflict.checking')}</p></div>`;
-        }
+		// 如果没有仓库，显示提示信息
+		if (!hasRepo) {
+			return `<div class="empty-state"><p>${t('conflict.initRepoHint')}</p></div>`;
+		}
 
-        const conflicts = this.data.conflicts || [];
+		// 如果 conflicts 字段不存在（undefined），说明还在检测中
+		if (this.data?.conflicts === undefined) {
+			return `<div class="empty-state"><p>${t('conflict.checking')}</p></div>`;
+		}
 
-        if (conflicts.length === 0) {
-            const history = this.data.conflictHistory || [];
-            return `
+		const conflicts = this.data.conflicts || [];
+
+		if (conflicts.length === 0) {
+			const history = this.data.conflictHistory || [];
+			return `
                 <div class="empty-state success">
                     <div class="success-icon">✅</div>
                     <h2>${t('conflict.noConflictsTitle')}</h2>
@@ -68,10 +68,10 @@ export class ConflictEditorComponent {
                 </div>
                 ${history.length > 0 ? this.getHistoryHtml(history) : ''}
             `;
-        }
+		}
 
-        const history = this.data.conflictHistory || [];
-        return `
+		const history = this.data.conflictHistory || [];
+		return `
             <div class="conflict-editor">
                 ${this.getHeaderHtml(conflicts.length)}
                 ${this.getConflictListHtml(conflicts)}
@@ -79,10 +79,10 @@ export class ConflictEditorComponent {
                 ${history.length > 0 ? this.getHistoryHtml(history) : ''}
             </div>
         `;
-    }
+	}
 
-    private getHeaderHtml(count: number): string {
-        return `
+	private getHeaderHtml(count: number): string {
+		return `
             <div class="section-header">
                 <div class="section-title">
                     <div class="conflict-hero">
@@ -98,10 +98,10 @@ export class ConflictEditorComponent {
                 </div>
             </div>
         `;
-    }
+	}
 
-    private getConflictListHtml(conflicts: string[]): string {
-        return `
+	private getConflictListHtml(conflicts: string[]): string {
+		return `
             <div class="conflict-batch">
                 <div class="batch-left">
                     <label class="select-all">
@@ -118,8 +118,8 @@ export class ConflictEditorComponent {
             </div>
             <div class="conflict-list">
                 ${conflicts.map(file => {
-            const isSelected = this.selectedFiles.has(file);
-            return `
+		const isSelected = this.selectedFiles.has(file);
+		return `
                         <div class="conflict-item ${isSelected ? 'selected' : ''}" 
                              data-file="${escapeHtml(file)}">
                             <div class="conflict-header">
@@ -134,13 +134,13 @@ export class ConflictEditorComponent {
                             ${isSelected ? this.getConflictActionsHtml(file) : ''}
                         </div>
                     `;
-        }).join('')}
+	}).join('')}
             </div>
         `;
-    }
+	}
 
-    private getConflictActionsHtml(file: string): string {
-        return `
+	private getConflictActionsHtml(file: string): string {
+		return `
             <div class="conflict-actions">
                 <h4>${t('conflict.chooseResolution')}</h4>
                 <div class="action-buttons">
@@ -171,10 +171,10 @@ export class ConflictEditorComponent {
                 </div>
             </div>
         `;
-    }
+	}
 
-    private getGuideHtml(): string {
-        return `
+	private getGuideHtml(): string {
+		return `
             <div class="conflict-guide">
                 <h3>${t('conflict.guide')}</h3>
                 <ul>
@@ -193,31 +193,31 @@ export class ConflictEditorComponent {
                 </ul>
             </div>
         `;
-    }
+	}
 
-    private getHistoryHtml(history: Array<{ id: string; timestamp: number; file: string; action: 'current' | 'incoming' | 'both'; conflictsCount: number }>): string {
-        const actionNames = {
-            current: '接受当前更改',
-            incoming: '接受传入更改',
-            both: '接受所有更改'
-        };
+	private getHistoryHtml(history: Array<{ id: string; timestamp: number; file: string; action: 'current' | 'incoming' | 'both'; conflictsCount: number }>): string {
+		const actionNames = {
+			current: '接受当前更改',
+			incoming: '接受传入更改',
+			both: '接受所有更改'
+		};
 
-        const formatTime = (timestamp: number): string => {
-            const date = new Date(timestamp);
-            const now = new Date();
-            const diff = now.getTime() - date.getTime();
-            const minutes = Math.floor(diff / 60000);
-            const hours = Math.floor(diff / 3600000);
-            const days = Math.floor(diff / 86400000);
+		const formatTime = (timestamp: number): string => {
+			const date = new Date(timestamp);
+			const now = new Date();
+			const diff = now.getTime() - date.getTime();
+			const minutes = Math.floor(diff / 60000);
+			const hours = Math.floor(diff / 3600000);
+			const days = Math.floor(diff / 86400000);
 
-            if (minutes < 1) return '刚刚';
-            if (minutes < 60) return `${minutes} 分钟前`;
-            if (hours < 24) return `${hours} 小时前`;
-            if (days < 7) return `${days} 天前`;
-            return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
-        };
+			if (minutes < 1) return '刚刚';
+			if (minutes < 60) return `${minutes} 分钟前`;
+			if (hours < 24) return `${hours} 小时前`;
+			if (days < 7) return `${days} 天前`;
+			return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+		};
 
-        return `
+		return `
             <div class="conflict-history">
                 <div class="history-head">
                     <h3>📜 ${t('conflict.historyTitle')}</h3>
@@ -240,116 +240,116 @@ export class ConflictEditorComponent {
                 </div>
             </div>
         `;
-    }
+	}
 
-    private attachEventListeners() {
-        // 冲突文件选择
-        this.container.querySelectorAll('.conflict-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                if ((e.target as HTMLElement).closest('.conflict-actions') ||
+	private attachEventListeners() {
+		// 冲突文件选择
+		this.container.querySelectorAll('.conflict-item').forEach(item => {
+			item.addEventListener('click', (e) => {
+				if ((e.target as HTMLElement).closest('.conflict-actions') ||
                     (e.target as HTMLElement).closest('.open-button')) {
-                    return;
-                }
-                const file = (e.currentTarget as HTMLElement).dataset.file;
-                if (file) {
-                    if (this.selectedFiles.has(file)) {
-                        this.selectedFiles.delete(file);
-                    } else {
-                        this.selectedFiles.add(file);
-                    }
-                    this.render(this.data);
-                }
-            });
-        });
+					return;
+				}
+				const file = (e.currentTarget as HTMLElement).dataset.file;
+				if (file) {
+					if (this.selectedFiles.has(file)) {
+						this.selectedFiles.delete(file);
+					} else {
+						this.selectedFiles.add(file);
+					}
+					this.render(this.data);
+				}
+			});
+		});
 
-        // 复选框选择（阻止冒泡避免双重触发）
-        this.container.querySelectorAll('.conflict-select').forEach(cb => {
-            cb.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const file = (e.currentTarget as HTMLElement).dataset.file;
-                if (file) {
-                    if (this.selectedFiles.has(file)) {
-                        this.selectedFiles.delete(file);
-                    } else {
-                        this.selectedFiles.add(file);
-                    }
-                    this.render(this.data);
-                }
-            });
-        });
+		// 复选框选择（阻止冒泡避免双重触发）
+		this.container.querySelectorAll('.conflict-select').forEach(cb => {
+			cb.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const file = (e.currentTarget as HTMLElement).dataset.file;
+				if (file) {
+					if (this.selectedFiles.has(file)) {
+						this.selectedFiles.delete(file);
+					} else {
+						this.selectedFiles.add(file);
+					}
+					this.render(this.data);
+				}
+			});
+		});
 
-        // 全选
-        const selectAll = this.container.querySelector('.select-all-checkbox') as HTMLInputElement | null;
-        if (selectAll) {
-            selectAll.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (!this.data?.conflicts) return;
-                const all = new Set(this.data.conflicts);
-                if (selectAll.checked) {
-                    this.selectedFiles = all;
-                } else {
-                    this.selectedFiles.clear();
-                }
-                this.render(this.data);
-            });
-        }
+		// 全选
+		const selectAll = this.container.querySelector('.select-all-checkbox') as HTMLInputElement | null;
+		if (selectAll) {
+			selectAll.addEventListener('click', (e) => {
+				e.stopPropagation();
+				if (!this.data?.conflicts) return;
+				const all = new Set(this.data.conflicts);
+				if (selectAll.checked) {
+					this.selectedFiles = all;
+				} else {
+					this.selectedFiles.clear();
+				}
+				this.render(this.data);
+			});
+		}
 
-        // 批量操作
-        this.container.querySelectorAll('.batch-button').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const action = (e.currentTarget as HTMLElement).dataset.action as 'current' | 'incoming' | 'both' | undefined;
-                const vscodeApi = (window as any)?.vscode;
-                if (!action || this.selectedFiles.size === 0 || !vscodeApi) return;
-                vscodeApi.postMessage({
-                    command: 'resolveConflicts',
-                    files: Array.from(this.selectedFiles),
-                    action
-                });
-            });
-        });
+		// 批量操作
+		this.container.querySelectorAll('.batch-button').forEach(btn => {
+			btn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const action = (e.currentTarget as HTMLElement).dataset.action as 'current' | 'incoming' | 'both' | undefined;
+				const vscodeApi = (window as any)?.vscode;
+				if (!action || this.selectedFiles.size === 0 || !vscodeApi) return;
+				vscodeApi.postMessage({
+					command: 'resolveConflicts',
+					files: Array.from(this.selectedFiles),
+					action
+				});
+			});
+		});
 
-        // 打开文件
-        this.container.querySelectorAll('.open-button').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const file = (e.currentTarget as HTMLElement).dataset.file;
-                const vscodeApi = (window as any)?.vscode;
-                if (file && vscodeApi) {
-                    vscodeApi.postMessage({ command: 'openFile', file });
-                }
-            });
-        });
+		// 打开文件
+		this.container.querySelectorAll('.open-button').forEach(btn => {
+			btn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const file = (e.currentTarget as HTMLElement).dataset.file;
+				const vscodeApi = (window as any)?.vscode;
+				if (file && vscodeApi) {
+					vscodeApi.postMessage({ command: 'openFile', file });
+				}
+			});
+		});
 
-        // 解决冲突
-        this.container.querySelectorAll('.action-button').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const target = e.currentTarget as HTMLElement;
-                const action = target.dataset.action as 'current' | 'incoming' | 'both';
-                const file = target.dataset.file;
-                const vscodeApi = (window as any)?.vscode;
+		// 解决冲突
+		this.container.querySelectorAll('.action-button').forEach(btn => {
+			btn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const target = e.currentTarget as HTMLElement;
+				const action = target.dataset.action as 'current' | 'incoming' | 'both';
+				const file = target.dataset.file;
+				const vscodeApi = (window as any)?.vscode;
 
-                if (file && action && vscodeApi) {
-                    vscodeApi.postMessage({
-                        command: 'resolveConflict',
-                        file,
-                        action
-                    });
-                }
-            });
-        });
+				if (file && action && vscodeApi) {
+					vscodeApi.postMessage({
+						command: 'resolveConflict',
+						file,
+						action
+					});
+				}
+			});
+		});
 
-        const historyClearBtn = this.container.querySelector('.history-clear-button');
-        if (historyClearBtn) {
-            historyClearBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const vscodeApi = (window as any)?.vscode;
-                if (vscodeApi) {
-                    vscodeApi.postMessage({ command: 'clearConflictHistory' });
-                }
-            });
-        }
-    }
+		const historyClearBtn = this.container.querySelector('.history-clear-button');
+		if (historyClearBtn) {
+			historyClearBtn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const vscodeApi = (window as any)?.vscode;
+				if (vscodeApi) {
+					vscodeApi.postMessage({ command: 'clearConflictHistory' });
+				}
+			});
+		}
+	}
 }
 
