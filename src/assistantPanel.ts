@@ -86,7 +86,7 @@ export class AssistantPanel {
             this.panel = null;
         });
 
-        this.panel.webview.onDidReceiveMessage((msg) => {
+        this.panel.webview.onDidReceiveMessage(async (msg) => {
             if (!msg || typeof msg !== 'object') return;
             switch (msg.command) {
                 case 'getData':
@@ -183,10 +183,33 @@ export class AssistantPanel {
                     }
                     break;
                 case 'initRepo':
-                    void this.initRepository(msg.path || null);
+                    try {
+                        // 执行初始化命令（命令内部会记录命令历史）
+                        await this.initRepository(msg.path || null);
+                        // 等待一小段时间确保初始化完成
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        // 初始化成功后，强制刷新数据
+                        await this.sendInitialData();
+                    } catch (error) {
+                        // 如果初始化失败，刷新以显示错误状态
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        vscode.window.showErrorMessage(`初始化失败: ${errorMessage}`);
+                        await this.sendInitialData();
+                    }
                     break;
                 case 'cloneRepo':
-                    void this.cloneRepository(msg.url || '', msg.path || null);
+                    try {
+                        await this.cloneRepository(msg.url || '', msg.path || null);
+                        // 等待一小段时间确保克隆完成
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        // 克隆成功后，强制刷新数据
+                        await this.sendInitialData();
+                    } catch (error) {
+                        // 如果克隆失败，刷新以显示错误状态
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        vscode.window.showErrorMessage(`克隆失败: ${errorMessage}`);
+                        await this.sendInitialData();
+                    }
                     break;
                 case 'rescanForRepos':
                     void this.rescanForRepos();
@@ -243,11 +266,32 @@ export class AssistantPanel {
     private async sendInitialData() {
         if (!this.panel) return;
 
-        const repos = this.repoManager.getRepos();
-        const repo = this.getActiveRepo(repos);
         const vscodeLanguage = vscode.env.language;
         const normalisedLanguage = vscodeLanguage.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en';
 
+        // 首先尝试获取仓库列表
+        let repos = this.repoManager.getRepos();
+        let repo = this.getActiveRepo(repos);
+
+        // 如果检测不到仓库，先尝试重新扫描一次（可能仓库状态刚发生变化，如提交后）
+        // 首次加载时，给后台扫描一些时间完成
+        if (!repo) {
+            // 先等待一小段时间，让后台的初始化扫描有机会完成
+            await new Promise(resolve => setTimeout(resolve, 200));
+            await this.repoManager.searchWorkspaceForRepos();
+            repos = this.repoManager.getRepos();
+            repo = this.getActiveRepo(repos);
+
+            // 如果仍然没有仓库，再等待一次并重试（处理首次打开时的异步初始化）
+            if (!repo) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+                await this.repoManager.searchWorkspaceForRepos();
+                repos = this.repoManager.getRepos();
+                repo = this.getActiveRepo(repos);
+            }
+        }
+
+        // 如果仍然没有仓库，发送未初始化状态
         if (!repo) {
             this.currentRepo = null;
             this.panel.webview.postMessage({
@@ -258,13 +302,75 @@ export class AssistantPanel {
                         path: ''
                     },
                     language: normalisedLanguage,
-                    // 即使没有检测到仓库，也向前端提供可用命令和分类，便于展示“初始化仓库”等操作
+                    // 即使没有检测到仓库，也向前端提供可用命令和分类，便于展示"初始化仓库"等操作
                     commandHistory: [],
                     availableCommands: AssistantCommandHistory.getAvailableCommands(),
                     categories: AssistantCommandHistory.getCommandCategories()
                 }
             });
             return;
+        }
+
+        // 验证仓库是否真的存在（借鉴 code-git-assistant 的做法）
+        // 通过尝试获取仓库信息来验证仓库是否有效
+        let repoInfo;
+        try {
+            repoInfo = await this.dataSource.getRepoInfo(repo, true, false, []);
+            // 如果获取仓库信息时出错，且错误不是"仓库不存在"，则可能是其他问题
+            if (repoInfo.error) {
+                // 检查仓库根目录是否还存在
+                const repoRoot = await this.dataSource.repoRoot(repo);
+                if (!repoRoot) {
+                    // 仓库不存在，重新扫描
+                    await this.repoManager.searchWorkspaceForRepos();
+                    repos = this.repoManager.getRepos();
+                    repo = this.getActiveRepo(repos);
+                    if (!repo) {
+                        // 重新扫描后仍然没有仓库，发送未初始化状态
+                        this.currentRepo = null;
+                        this.panel.webview.postMessage({
+                            type: 'gitData',
+                            data: {
+                                repositoryInfo: {
+                                    name: normalisedLanguage === 'zh-CN' ? '未检测到 Git 仓库' : 'No Git repository detected',
+                                    path: ''
+                                },
+                                language: normalisedLanguage,
+                                commandHistory: [],
+                                availableCommands: AssistantCommandHistory.getAvailableCommands(),
+                                categories: AssistantCommandHistory.getCommandCategories()
+                            }
+                        });
+                        return;
+                    }
+                    // 重新获取仓库信息
+                    repoInfo = await this.dataSource.getRepoInfo(repo, true, false, []);
+                }
+            }
+        } catch (error) {
+            // 如果获取仓库信息失败，可能是仓库不存在，重新扫描
+            await this.repoManager.searchWorkspaceForRepos();
+            repos = this.repoManager.getRepos();
+            repo = this.getActiveRepo(repos);
+            if (!repo) {
+                this.currentRepo = null;
+                this.panel.webview.postMessage({
+                    type: 'gitData',
+                    data: {
+                        repositoryInfo: {
+                            name: normalisedLanguage === 'zh-CN' ? '未检测到 Git 仓库' : 'No Git repository detected',
+                            path: ''
+                        },
+                        language: normalisedLanguage,
+                        commandHistory: [],
+                        availableCommands: AssistantCommandHistory.getAvailableCommands(),
+                        categories: AssistantCommandHistory.getCommandCategories()
+                    }
+                });
+                return;
+            }
+            // 重新获取仓库信息
+            repoInfo = await this.dataSource.getRepoInfo(repo, true, false, []);
         }
 
         this.currentRepo = repo;
@@ -288,7 +394,12 @@ export class AssistantPanel {
         const hideRemotes = repoState.hideRemotes || [];
 
         try {
-            const repoInfo = await this.dataSource.getRepoInfo(repo, showRemoteBranches, showStashes, hideRemotes);
+            // 如果之前已经获取过 repoInfo，但配置不同，需要重新获取
+            // 否则使用已验证的 repoInfo
+            if (!repoInfo || showStashes !== false || showRemoteBranches !== true) {
+                repoInfo = await this.dataSource.getRepoInfo(repo, showRemoteBranches, showStashes, hideRemotes);
+            }
+            
             const commitOrdering = this.toCommitOrdering(repoState.commitOrdering, globalConfig.commitOrder);
 
             const commitData = await this.dataSource.getCommits(
@@ -396,6 +507,15 @@ export class AssistantPanel {
         const meta = commands.find(c => c.id === commandId);
         const commandName = meta ? meta.name : commandId;
 
+        // 判断是否为 Git 相关命令（可能改变仓库状态）
+        const isGitCommand = commandId.startsWith('git.') || 
+                             commandId.includes('commit') || 
+                             commandId.includes('push') || 
+                             commandId.includes('pull') ||
+                             commandId.includes('merge') ||
+                             commandId.includes('branch') ||
+                             commandId.includes('checkout');
+
         try {
             const allCommands = await vscode.commands.getCommands(true);
             if (!allCommands.includes(commandId)) {
@@ -411,6 +531,12 @@ export class AssistantPanel {
             }
 
             await vscode.commands.executeCommand(commandId);
+
+            // 如果是 Git 相关命令，等待一下让 VS Code Git 扩展更新状态，然后重新扫描仓库
+            if (isGitCommand) {
+                await new Promise(resolve => setTimeout(resolve, 300));
+                await this.repoManager.searchWorkspaceForRepos();
+            }
 
             AssistantCommandHistory.add({
                 command: commandId,
@@ -1532,8 +1658,7 @@ export class AssistantPanel {
             // Rescan for repositories
             await this.repoManager.searchWorkspaceForRepos();
 
-            // Refresh the panel
-            this.sendInitialData();
+            // 注意：刷新操作在消息处理中完成，这里不再调用
 
             const successMsg = normalisedLanguage === 'zh-CN'
                 ? 'Git 仓库初始化成功！'
@@ -1614,8 +1739,7 @@ export class AssistantPanel {
             // Rescan for repositories
             await this.repoManager.searchWorkspaceForRepos();
 
-            // Refresh the panel
-            this.sendInitialData();
+            // 注意：刷新操作在消息处理中完成，这里不再调用
 
             const successMsg = normalisedLanguage === 'zh-CN'
                 ? 'Git 仓库克隆成功！'
