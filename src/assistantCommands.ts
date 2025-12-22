@@ -1,4 +1,6 @@
 import * as cp from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { getConfig } from './config';
 import { DataSource } from './dataSource';
@@ -123,6 +125,9 @@ async function pickRemote(repo: string, dataSource: DataSource, placeHolder: str
 
 async function checkUnmergedFiles(repoPath: string): Promise<string[]> {
 	return new Promise<string[]>((resolve, reject) => {
+		// 使用 git ls-files -u 检查未合并的文件
+		// 然后检查这些文件是否已经在暂存区中
+		// 只报告未暂存的冲突文件
 		const git = cp.spawn('git', ['ls-files', '-u'], {
 			cwd: repoPath,
 			env: process.env
@@ -134,19 +139,161 @@ async function checkUnmergedFiles(repoPath: string): Promise<string[]> {
 		});
 
 		git.on('close', (code) => {
-			if (code === 0 || stdout.trim()) {
+			if (code === 0 && stdout.trim()) {
 				// 解析未合并的文件列表（git ls-files -u 输出格式：stage mode hash path）
 				const lines = stdout.trim().split('\n');
-				const unmergedFiles = new Set<string>();
+				const unmergedFilesSet = new Set<string>();
+				
 				for (const line of lines) {
 					if (line.trim()) {
 						const parts = line.trim().split(/\s+/);
 						if (parts.length >= 4) {
-							unmergedFiles.add(parts.slice(3).join(' '));
+							const filePath = parts.slice(3).join(' ');
+							unmergedFilesSet.add(filePath);
 						}
 					}
 				}
-				resolve(Array.from(unmergedFiles));
+				
+				// 检查这些文件是否已经在暂存区中
+				// 如果文件已经在暂存区中，不应该报告为冲突
+				const gitStatus = cp.spawn('git', ['diff', '--cached', '--name-only'], {
+					cwd: repoPath,
+					env: process.env
+				});
+				
+				let stagedFiles = '';
+				gitStatus.stdout.on('data', (data) => {
+					stagedFiles += data.toString();
+				});
+				
+				gitStatus.on('close', (statusCode) => {
+					const stagedFilesSet = new Set<string>();
+					if (statusCode === 0 && stagedFiles.trim()) {
+						stagedFiles.trim().split('\n').forEach(file => {
+							if (file.trim()) {
+								stagedFilesSet.add(file.trim());
+							}
+						});
+					}
+					
+					// 只返回未暂存的冲突文件
+					const unmergedFiles = Array.from(unmergedFilesSet).filter(file => !stagedFilesSet.has(file));
+					resolve(unmergedFiles);
+				});
+				
+				gitStatus.on('error', () => {
+					// 如果检查暂存区失败，返回所有未合并的文件
+					resolve(Array.from(unmergedFilesSet));
+				});
+			} else {
+				resolve([]);
+			}
+		});
+
+		git.on('error', (error) => {
+			reject(error);
+		});
+	});
+}
+
+async function checkStagedFiles(repoPath: string): Promise<boolean> {
+	// 注意：在无初始提交的仓库，git diff --cached --name-only HEAD 会返回非 0
+	// 因此这里只要 stdout 有内容就认为有暂存文件，忽略退出码。
+	return new Promise<boolean>((resolve) => {
+		const git = cp.spawn('git', ['diff', '--cached', '--name-only'], {
+			cwd: repoPath,
+			env: process.env
+		});
+
+		let stdout = '';
+		git.stdout.on('data', (data) => {
+			stdout += data.toString();
+		});
+
+		git.on('close', () => {
+			if (stdout.trim().length > 0) {
+				resolve(true);
+				return;
+			}
+
+			// 如果 diff 没有输出，再用 git status 兜底检查索引区
+			const status = cp.spawn('git', ['status', '--porcelain'], {
+				cwd: repoPath,
+				env: process.env
+			});
+
+			let statusOut = '';
+			status.stdout.on('data', (data) => {
+				statusOut += data.toString();
+			});
+
+			status.on('close', () => {
+				// porcelain 首列是索引区状态，第二列是工作区状态
+				// 只要首列不是空格且不是 '?'（未跟踪），就表示有暂存
+				const hasIndexed = statusOut
+					.split('\n')
+					.some(line => line.length >= 2 && line[0] !== ' ' && line[0] !== '?');
+				resolve(hasIndexed);
+			});
+
+			status.on('error', () => resolve(false));
+		});
+
+		git.on('error', () => {
+			// 出错时返回 false，调用方会回退到 VS Code Git API
+			resolve(false);
+		});
+	});
+}
+
+async function isInMergeState(repoPath: string): Promise<boolean> {
+	try {
+		const mergeHeadPath = path.join(repoPath, '.git', 'MERGE_HEAD');
+		return fs.existsSync(mergeHeadPath);
+	} catch {
+		return false;
+	}
+}
+
+async function getFilesNeedingStagingInMerge(repoPath: string): Promise<string[]> {
+	return new Promise<string[]>((resolve, reject) => {
+		// 使用 git status --porcelain 来检查文件状态
+		// 在合并状态中，已修改但未暂存的文件需要被添加到暂存区
+		const git = cp.spawn('git', ['status', '--porcelain'], {
+			cwd: repoPath,
+			env: process.env
+		});
+
+		let stdout = '';
+		git.stdout.on('data', (data) => {
+			stdout += data.toString();
+		});
+
+		git.on('close', (code) => {
+			if (code === 0) {
+				const lines = stdout.trim().split('\n').filter(line => line.trim());
+				const filesToStage: string[] = [];
+				
+				for (const line of lines) {
+					if (line.length < 3) continue;
+					
+					const indexStatus = line[0]; // 暂存区状态
+					const workingTreeStatus = line[1]; // 工作区状态
+					const filePath = line.substring(3).trim();
+					
+					// 如果文件在暂存区中没有更改（indexStatus 为空格），但在工作区中有更改（workingTreeStatus 不为空格）
+					// 或者文件处于未合并状态（indexStatus 为 'U' 或 'A'/'D' 等）
+					// 这些文件需要被添加到暂存区
+					if (indexStatus === ' ' && workingTreeStatus !== ' ') {
+						// 工作区有更改但暂存区没有
+						filesToStage.push(filePath);
+					} else if (indexStatus === 'U' || indexStatus === 'A' || indexStatus === 'D') {
+						// 未合并状态的文件
+						filesToStage.push(filePath);
+					}
+				}
+				
+				resolve(filesToStage);
 			} else {
 				resolve([]);
 			}
@@ -255,10 +402,97 @@ export function registerAssistantCommands(
 				return;
 			}
 
+			// 获取仓库路径
+			const repoPath = repo.rootUri?.fsPath || (await dataSource.repoRoot(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || ''));
 			const status = repo.state;
 			const workingChanges = status.workingTreeChanges || [];
+			
+			// 检查是否有已解决但未暂存的冲突文件
+			let unmergedFiles: string[] = [];
+			if (repoPath) {
+				try {
+					unmergedFiles = await checkUnmergedFiles(repoPath);
+				} catch {
+					// 忽略错误
+				}
+			}
+			
+			// 如果处于合并状态，检查是否有需要暂存的文件
+			if (repoPath && unmergedFiles.length === 0) {
+				try {
+					const inMerge = await isInMergeState(repoPath);
+					if (inMerge) {
+						const filesNeedingStaging = await getFilesNeedingStagingInMerge(repoPath);
+						if (filesNeedingStaging.length > 0) {
+							unmergedFiles = filesNeedingStaging;
+						}
+					}
+				} catch {
+					// 忽略错误
+				}
+			}
+			
+			// 如果有未暂存的冲突文件或合并状态中需要暂存的文件，直接添加它们
+			if (unmergedFiles.length > 0) {
+				const vscodeLanguage = vscode.env.language;
+				const normalisedLanguage = vscodeLanguage.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en';
+				
+				await vscode.window.withProgress(
+					{
+						location: vscode.ProgressLocation.Notification,
+						title: normalisedLanguage === 'zh-CN' ? '正在添加已解决的冲突文件到暂存区...' : 'Staging resolved conflict files...',
+						cancellable: false
+					},
+					async () => {
+						// 使用 git 命令添加冲突文件
+						const git = cp.spawn('git', ['add', ...unmergedFiles], {
+							cwd: repoPath,
+							env: process.env
+						});
+						
+						await new Promise<void>((resolve, reject) => {
+							let stderr = '';
+							git.stderr.on('data', (data) => {
+								stderr += data.toString();
+							});
+							
+							git.on('close', (code) => {
+								if (code === 0) {
+									resolve();
+								} else {
+									reject(new Error(stderr || `Git add failed with exit code ${code}`));
+								}
+							});
+							
+							git.on('error', (error) => {
+								reject(error);
+							});
+						});
+					}
+				);
+				
+				// 等待 VS Code Git API 更新状态
+				await new Promise(resolve => setTimeout(resolve, 300));
+				
+				const msg = normalisedLanguage === 'zh-CN'
+					? `✅ 已添加 ${unmergedFiles.length} 个已解决的冲突文件到暂存区`
+					: `✅ Added ${unmergedFiles.length} resolved conflict file(s) to staging area`;
+				vscode.window.showInformationMessage(msg);
+				
+				// 刷新 assistantPanel 数据
+				if (assistantPanel) {
+					await assistantPanel.sendInitialData();
+				}
+				return;
+			}
+			
 			if (workingChanges.length === 0) {
-				vscode.window.showInformationMessage('没有需要添加的文件');
+				const vscodeLanguage = vscode.env.language;
+				const normalisedLanguage = vscodeLanguage.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en';
+				const msg = normalisedLanguage === 'zh-CN'
+					? '没有需要添加的文件'
+					: 'No files to add';
+				vscode.window.showInformationMessage(msg);
 				return;
 			}
 
@@ -536,10 +770,16 @@ export function registerAssistantCommands(
 				// 如果检查失败，继续执行（可能没有冲突）
 			}
 
-			// 检查是否有暂存的文件
-			const status = repo.state as any;
-			const stagedChanges = status.indexChanges || [];
-			const hasStagedFiles = stagedChanges.length > 0;
+			// 检查是否有暂存的文件（使用 git 命令直接检查，而不是依赖可能过时的 VS Code Git API）
+			let hasStagedFiles = false;
+			try {
+				hasStagedFiles = await checkStagedFiles(repoPath);
+			} catch (error) {
+				// 如果检查失败，尝试使用 VS Code Git API 作为后备
+				const status = repo.state as any;
+				const stagedChanges = status.indexChanges || [];
+				hasStagedFiles = stagedChanges.length > 0;
+			}
 
 			if (!hasStagedFiles) {
 				const vscodeLanguage = vscode.env.language;

@@ -624,9 +624,12 @@ export class AssistantPanel {
 			});
 
 			// 反馈提示（尤其是更改类操作，如暂存/取消暂存）
+			// 注意：某些命令（如 git-assistant.addFiles）已经在命令内部显示了具体的消息，
+			// 这里就不重复显示通用消息了，避免消息重复或误导
 			const lang = vscode.env.language.toLowerCase().startsWith('zh') ? 'zh' : 'en';
 			const tip = successTips[commandId];
-			if (tip) {
+			// git-assistant.addFiles 命令已经显示了具体的消息，不需要这里再显示通用消息
+			if (tip && commandId !== 'git-assistant.addFiles') {
 				vscode.window.showInformationMessage(lang === 'zh' ? tip.zh : tip.en);
 			}
 		} catch (error) {
