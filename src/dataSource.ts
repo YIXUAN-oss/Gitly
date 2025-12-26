@@ -1817,7 +1817,12 @@ export class DataSource extends Disposable {
 	 */
 	private execDiffCached(repo: string, arg: '--numstat' | '--name-status', filter: string = 'AMDR') {
 		const args = ['diff', '--cached', arg, '--find-renames', '--diff-filter=' + filter, '-z', 'HEAD'];
-		return this.spawnGit(args, repo, (stdout) => stdout.split('\0'));
+		// 先尝试带 HEAD 的命令，如果失败（可能是因为没有 HEAD），则尝试不带 HEAD
+		return this.spawnGit(args, repo, (stdout) => stdout.split('\0')).catch(() => {
+			// 如果没有 HEAD（新仓库），使用不带 HEAD 的命令
+			const argsWithoutHead = ['diff', '--cached', arg, '--find-renames', '--diff-filter=' + filter, '-z'];
+			return this.spawnGit(argsWithoutHead, repo, (stdout) => stdout.split('\0'));
+		});
 	}
 
 	/**

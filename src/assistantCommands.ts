@@ -516,6 +516,8 @@ export function registerAssistantCommands(
 						await repo.add(workingChanges.map((c: any) => c.uri));
 					}
 				);
+				// 等待 VS Code Git API 更新状态
+				await new Promise(resolve => setTimeout(resolve, 300));
 				vscode.window.showInformationMessage('✅ 所有文件已添加到暂存区');
 				return;
 			}
@@ -540,6 +542,8 @@ export function registerAssistantCommands(
 					await repo.add(selected.map((s: any) => s.change.uri));
 				}
 			);
+			// 等待 VS Code Git API 更新状态
+			await new Promise(resolve => setTimeout(resolve, 300));
 			vscode.window.showInformationMessage(`✅ 已添加 ${selected.length} 个文件到暂存区`);
 		} catch {
 			// 发生错误时退回到内置命令

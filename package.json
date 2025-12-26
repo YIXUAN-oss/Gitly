@@ -76,7 +76,6 @@
 		"onCommand:gitly.sidebar.refreshBranches",
 		"onCommand:gitly.sidebar.refreshHistory",
 		"onCommand:gitly.sidebar.refreshConflicts",
-		"onCommand:gitly.sidebar.refreshStaged",
 		"onCommand:gitly.sidebar.checkoutBranch",
 		"onCommand:gitly.sidebar.showCommitDetails",
 		"onCommand:gitly.sidebar.openGitGraph",
@@ -84,8 +83,7 @@
 		"onView:gitly-sidebar",
 		"onView:gitly.sidebar.branches",
 		"onView:gitly.sidebar.history",
-		"onView:gitly.sidebar.conflicts",
-		"onView:gitly.sidebar.staged"
+		"onView:gitly.sidebar.conflicts"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -296,12 +294,6 @@
 			},
 			{
 				"category": "Gitly",
-				"command": "gitly.sidebar.refreshStaged",
-				"title": "%gitly.command.sidebar.refreshStaged%",
-				"icon": "$(refresh)"
-			},
-			{
-				"category": "Gitly",
 				"command": "gitly.sidebar.checkoutBranch",
 				"title": "%gitly.command.sidebar.checkoutBranch%",
 				"icon": "$(git-branch)"
@@ -345,11 +337,6 @@
 				{
 					"id": "gitly.sidebar.branches",
 					"name": "%gitly.sidebar.branches%",
-					"icon": "resources/icon.png"
-				},
-				{
-					"id": "gitly.sidebar.staged",
-					"name": "%gitly.sidebar.staged%",
 					"icon": "resources/icon.png"
 				},
 				{
@@ -1784,12 +1771,6 @@
 				{
 					"command": "gitly.sidebar.refreshConflicts",
 					"when": "view == gitly.sidebar.conflicts",
-					"group": "navigation@0",
-					"icon": "$(refresh)"
-				},
-				{
-					"command": "gitly.sidebar.refreshStaged",
-					"when": "view == gitly.sidebar.staged",
 					"group": "navigation@0",
 					"icon": "$(refresh)"
 				},
