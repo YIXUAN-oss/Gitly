@@ -11,6 +11,10 @@ const webTranslations: { [lang: string]: { [key: string]: string } } = {
 		'dropdown.showAll': 'Show All',
 		'checkbox.showRemoteBranches': 'Show Remote Branches',
 		'button.loadMoreCommits': 'Load More Commits',
+		'button.fetch': 'Fetch from Remote(s)',
+		'button.fetchWithPrune': 'Fetch & Prune from Remote(s)',
+		'button.refresh': 'Refresh',
+		'button.refreshing': 'Refreshing',
 		'error.unableToLoadRepo': 'Unable to load the Git Graph View for the repository',
 		'error.unableToLoadCommits': 'Unable to load Commits',
 		'error.unableToLoadRepoInfo': 'Unable to load Repository Info',
@@ -117,13 +121,37 @@ const webTranslations: { [lang: string]: { [key: string]: string } } = {
 		'commitDetails.uncommittedLabel': 'Uncommitted Changes',
 		'commitDetails.close': 'Close',
 		'commitDetails.codeReview': 'Toggle Code Review',
+		'commitDetails.startCodeReview': 'Start Code Review',
+		'commitDetails.endCodeReview': 'End Code Review',
 		'commitDetails.fileTreeView': 'File Tree View',
 		'commitDetails.fileListView': 'File List View',
 		'commitDetails.uncommittedSummaryTooltip': 'Displaying all uncommitted changes.',
 		'commitDetails.comparisonSummaryTooltip': 'Displaying all changes from %s1 to %s2.',
 		'commitDetails.codeReviewTooltip': 'Toggle Code Review',
 		'commitDetails.fileTreeViewTooltip': 'File Tree View',
-		'commitDetails.fileListViewTooltip': 'File List View'
+		'commitDetails.fileListViewTooltip': 'File List View',
+		'fileAction.viewDiff': 'View Diff',
+		'fileAction.viewFileAtRevision': 'View File at this Revision',
+		'fileAction.viewDiffWithWorkingFile': 'View Diff with Working File',
+		'fileAction.openFile': 'Open File',
+		'fileAction.markAsReviewed': 'Mark as Reviewed',
+		'fileAction.markAsNotReviewed': 'Mark as Not Reviewed',
+		'fileAction.resetFileToRevision': 'Reset File to this Revision',
+		'fileAction.copyAbsoluteFilePath': 'Copy Absolute File Path to Clipboard',
+		'fileAction.copyRelativeFilePath': 'Copy Relative File Path to Clipboard',
+		'fileAction.clickToViewDiff': 'Click to View Diff',
+		'fileAction.unableToViewDiff': 'Unable to View Diff',
+		'fileAction.binaryFile': 'this is a binary file',
+		'fileAction.lastFileViewed': 'Last File Viewed',
+		'fileAction.clickToViewRepository': 'Click to View Repository',
+		'fileAction.addition': 'addition',
+		'fileAction.additions': 'additions',
+		'fileAction.deletion': 'deletion',
+		'fileAction.deletions': 'deletions',
+		'error.unableToStartCodeReview': 'Unable to Start Code Review',
+		'error.unableToViewDiff': 'Unable to View Diff',
+		'error.unableToViewDiffWithWorkingFile': 'Unable to View Diff with Working File',
+		'error.unableToViewFileAtRevision': 'Unable to View File at Revision'
 	},
 	'zh-CN': {
 		'column.graph': '图形',
@@ -136,6 +164,10 @@ const webTranslations: { [lang: string]: { [key: string]: string } } = {
 		'dropdown.showAll': '显示全部',
 		'checkbox.showRemoteBranches': '显示远程分支',
 		'button.loadMoreCommits': '加载更多提交',
+		'button.fetch': '从远程获取',
+		'button.fetchWithPrune': '从远程获取并清理',
+		'button.refresh': '刷新',
+		'button.refreshing': '刷新中',
 		'error.unableToLoadRepo': '无法加载仓库的 Gitly 视图表 视图',
 		'error.unableToLoadCommits': '无法加载提交',
 		'error.unableToLoadRepoInfo': '无法加载仓库信息',
@@ -242,8 +274,32 @@ const webTranslations: { [lang: string]: { [key: string]: string } } = {
 		'commitDetails.uncommittedLabel': '未提交的更改',
 		'commitDetails.close': '关闭',
 		'commitDetails.codeReview': '切换代码审查视图',
+		'commitDetails.startCodeReview': '启动代码审查',
+		'commitDetails.endCodeReview': '结束代码审查',
 		'commitDetails.fileTreeView': '文件树视图',
-		'commitDetails.fileListView': '文件列表视图'
+		'commitDetails.fileListView': '文件列表视图',
+		'fileAction.viewDiff': '查看差异',
+		'fileAction.viewFileAtRevision': '在此版本中查看文件',
+		'fileAction.viewDiffWithWorkingFile': '与工作区文件对比差异',
+		'fileAction.openFile': '打开文件',
+		'fileAction.markAsReviewed': '标记为已审查',
+		'fileAction.markAsNotReviewed': '标记为未审查',
+		'fileAction.resetFileToRevision': '将文件重置到此版本',
+		'fileAction.copyAbsoluteFilePath': '复制绝对文件路径到剪贴板',
+		'fileAction.copyRelativeFilePath': '复制相对文件路径到剪贴板',
+		'fileAction.clickToViewDiff': '点击查看差异',
+		'fileAction.unableToViewDiff': '无法查看差异',
+		'fileAction.binaryFile': '这是一个二进制文件',
+		'fileAction.lastFileViewed': '最后查看的文件',
+		'fileAction.clickToViewRepository': '点击查看仓库',
+		'fileAction.addition': '行添加',
+		'fileAction.additions': '行添加',
+		'fileAction.deletion': '行删除',
+		'fileAction.deletions': '行删除',
+		'error.unableToStartCodeReview': '无法启动代码审查',
+		'error.unableToViewDiff': '无法查看差异',
+		'error.unableToViewDiffWithWorkingFile': '无法与工作区文件对比差异',
+		'error.unableToViewFileAtRevision': '无法查看此版本的文件'
 	}
 };
 
@@ -413,7 +469,7 @@ class GitGraphView {
 		}
 
 		const fetchBtn = document.getElementById('fetchBtn')!, findBtn = document.getElementById('findBtn')!, settingsBtn = document.getElementById('settingsBtn')!, terminalBtn = document.getElementById('terminalBtn')!;
-		fetchBtn.title = 'Fetch' + (this.config.fetchAndPrune ? ' & Prune' : '') + ' from Remote(s)';
+		fetchBtn.title = this.config.fetchAndPrune ? webT('button.fetchWithPrune') : webT('button.fetch');
 		fetchBtn.innerHTML = SVG_ICONS.download;
 		fetchBtn.addEventListener('click', () => this.fetchFromRemotesAction());
 		findBtn.innerHTML = SVG_ICONS.search;
@@ -1199,11 +1255,15 @@ class GitGraphView {
 
 	private renderFetchButton() {
 		alterClass(this.controlsElem, CLASS_FETCH_SUPPORTED, this.gitRemotes.length > 0);
+		const fetchBtn = document.getElementById('fetchBtn');
+		if (fetchBtn) {
+			fetchBtn.title = this.config.fetchAndPrune ? webT('button.fetchWithPrune') : webT('button.fetch');
+		}
 	}
 
 	public renderRefreshButton() {
 		const enabled = !this.currentRepoRefreshState.inProgress;
-		this.refreshBtnElem.title = enabled ? 'Refresh' : 'Refreshing';
+		this.refreshBtnElem.title = enabled ? webT('button.refresh') : webT('button.refreshing');
 		this.refreshBtnElem.innerHTML = enabled ? SVG_ICONS.refresh : SVG_ICONS.loading;
 		alterClass(this.refreshBtnElem, CLASS_REFRESHING, !enabled);
 	}
@@ -3088,7 +3148,7 @@ class GitGraphView {
 			if (lastViewedElem !== null) lastViewedElem.remove();
 			lastViewedElem = document.createElement('span');
 			lastViewedElem.id = 'cdvLastFileViewed';
-			lastViewedElem.title = 'Last File Viewed';
+			lastViewedElem.title = webT('fileAction.lastFileViewed');
 			lastViewedElem.innerHTML = SVG_ICONS.eyeOpen;
 			insertBeforeFirstChildWithClass(lastViewedElem, fileElem, 'fileTreeFileAction');
 		}
@@ -3336,53 +3396,53 @@ class GitGraphView {
 			contextMenu.show([
 				[
 					{
-						title: 'View Diff',
+						title: webT('fileAction.viewDiff'),
 						visible: visibility.viewDiff && diffPossible,
 						onClick: () => triggerViewFileDiff(file, fileElem)
 					},
 					{
-						title: 'View File at this Revision',
+						title: webT('fileAction.viewFileAtRevision'),
 						visible: visibility.viewFileAtThisRevision && fileExistsAtThisRevisionAndDiffPossible,
 						onClick: () => triggerViewFileAtRevision(file, fileElem)
 					},
 					{
-						title: 'View Diff with Working File',
+						title: webT('fileAction.viewDiffWithWorkingFile'),
 						visible: visibility.viewDiffWithWorkingFile && fileExistsAtThisRevisionAndDiffPossible,
 						onClick: () => triggerViewFileDiffWithWorkingFile(file, fileElem)
 					},
 					{
-						title: 'Open File',
+						title: webT('fileAction.openFile'),
 						visible: visibility.openFile && file.type !== GG.GitFileStatus.Deleted,
 						onClick: () => triggerOpenFile(file, fileElem)
 					}
 				],
 				[
 					{
-						title: 'Mark as Reviewed',
+						title: webT('fileAction.markAsReviewed'),
 						visible: visibility.markAsReviewed && codeReviewInProgressAndNotReviewed,
 						onClick: () => this.cdvUpdateFileState(file, fileElem, true, false)
 					},
 					{
-						title: 'Mark as Not Reviewed',
+						title: webT('fileAction.markAsNotReviewed'),
 						visible: visibility.markAsNotReviewed && expandedCommit.codeReview !== null && !codeReviewInProgressAndNotReviewed,
 						onClick: () => this.cdvUpdateFileState(file, fileElem, false, false)
 					}
 				],
 				[
 					{
-						title: 'Reset File to this Revision' + ELLIPSIS,
+						title: webT('fileAction.resetFileToRevision') + ELLIPSIS,
 						visible: visibility.resetFileToThisRevision && fileExistsAtThisRevision && expandedCommit.compareWithHash === null,
 						onClick: () => triggerResetFileToRevision(file, fileElem)
 					}
 				],
 				[
 					{
-						title: 'Copy Absolute File Path to Clipboard',
+						title: webT('fileAction.copyAbsoluteFilePath'),
 						visible: visibility.copyAbsoluteFilePath,
 						onClick: () => triggerCopyFilePath(file, true)
 					},
 					{
-						title: 'Copy Relative File Path to Clipboard',
+						title: webT('fileAction.copyRelativeFilePath'),
 						visible: visibility.copyRelativeFilePath,
 						onClick: () => triggerCopyFilePath(file, false)
 					}
@@ -3456,7 +3516,7 @@ class GitGraphView {
 
 		let active = this.expandedCommit.codeReview !== null;
 		alterClass(btnElem, CLASS_ACTIVE, active);
-		btnElem.title = (active ? 'End' : 'Start') + ' Code Review';
+		btnElem.title = active ? webT('commitDetails.endCodeReview') : webT('commitDetails.startCodeReview');
 	}
 }
 
@@ -3675,7 +3735,7 @@ window.addEventListener('load', () => {
 				if (msg.error === null) {
 					gitGraph.startCodeReview(msg.commitHash, msg.compareWithHash, msg.codeReview);
 				} else {
-					dialog.showError('Unable to Start Code Review', msg.error, null, null);
+					dialog.showError(webT('error.unableToStartCodeReview'), msg.error, null, null);
 				}
 				break;
 			case 'tagDetails':
@@ -3691,13 +3751,13 @@ window.addEventListener('load', () => {
 				}
 				break;
 			case 'viewDiff':
-				finishOrDisplayError(msg.error, 'Unable to View Diff');
+				finishOrDisplayError(msg.error, webT('error.unableToViewDiff'));
 				break;
 			case 'viewDiffWithWorkingFile':
-				finishOrDisplayError(msg.error, 'Unable to View Diff with Working File');
+				finishOrDisplayError(msg.error, webT('error.unableToViewDiffWithWorkingFile'));
 				break;
 			case 'viewFileAtRevision':
-				finishOrDisplayError(msg.error, 'Unable to View File at Revision');
+				finishOrDisplayError(msg.error, webT('error.unableToViewFileAtRevision'));
 				break;
 			case 'viewScm':
 				finishOrDisplayError(msg.error, 'Unable to open the Source Control View');
@@ -3876,18 +3936,21 @@ function generateFileTreeLeafHtml(name: string, leaf: FileTreeLeaf, gitFiles: Re
 		const textFile = fileTreeFile.additions !== null && fileTreeFile.deletions !== null;
 		const diffPossible = fileTreeFile.type === GG.GitFileStatus.Untracked || textFile;
 		const changeTypeMessage = GIT_FILE_CHANGE_TYPES[fileTreeFile.type] + (fileTreeFile.type === GG.GitFileStatus.Renamed ? ' (' + escapeHtml(fileTreeFile.oldFilePath) + ' → ' + escapeHtml(fileTreeFile.newFilePath) + ')' : '');
-		return '<li data-pathseg="' + encodedName + '"><span class="fileTreeFileRecord' + (leaf.index === fileContextMenuOpen ? ' ' + CLASS_CONTEXT_MENU_ACTIVE : '') + '" data-index="' + leaf.index + '"><span class="fileTreeFile' + (diffPossible ? ' gitDiffPossible' : '') + (leaf.reviewed ? '' : ' ' + CLASS_PENDING_REVIEW) + '" title="' + (diffPossible ? 'Click to View Diff' : 'Unable to View Diff' + (fileTreeFile.type !== GG.GitFileStatus.Deleted ? ' (this is a binary file)' : '')) + ' • ' + changeTypeMessage + '"><span class="fileTreeFileIcon">' + SVG_ICONS.file + '</span><span class="gitFileName ' + fileTreeFile.type + '">' + escapedName + '</span></span>' +
+		const fileTitle = diffPossible ? webT('fileAction.clickToViewDiff') : webT('fileAction.unableToViewDiff') + (fileTreeFile.type !== GG.GitFileStatus.Deleted ? ' (' + webT('fileAction.binaryFile') + ')' : '');
+		const additionsTitle = fileTreeFile.additions + ' ' + (fileTreeFile.additions !== 1 ? webT('fileAction.additions') : webT('fileAction.addition'));
+		const deletionsTitle = fileTreeFile.deletions + ' ' + (fileTreeFile.deletions !== 1 ? webT('fileAction.deletions') : webT('fileAction.deletion'));
+		return '<li data-pathseg="' + encodedName + '"><span class="fileTreeFileRecord' + (leaf.index === fileContextMenuOpen ? ' ' + CLASS_CONTEXT_MENU_ACTIVE : '') + '" data-index="' + leaf.index + '"><span class="fileTreeFile' + (diffPossible ? ' gitDiffPossible' : '') + (leaf.reviewed ? '' : ' ' + CLASS_PENDING_REVIEW) + '" title="' + fileTitle + ' • ' + changeTypeMessage + '"><span class="fileTreeFileIcon">' + SVG_ICONS.file + '</span><span class="gitFileName ' + fileTreeFile.type + '">' + escapedName + '</span></span>' +
 			(initialState.config.enhancedAccessibility ? '<span class="fileTreeFileType" title="' + changeTypeMessage + '">' + fileTreeFile.type + '</span>' : '') +
-			(fileTreeFile.type !== GG.GitFileStatus.Added && fileTreeFile.type !== GG.GitFileStatus.Untracked && fileTreeFile.type !== GG.GitFileStatus.Deleted && textFile ? '<span class="fileTreeFileAddDel">(<span class="fileTreeFileAdd" title="' + fileTreeFile.additions + ' addition' + (fileTreeFile.additions !== 1 ? 's' : '') + '">+' + fileTreeFile.additions + '</span>|<span class="fileTreeFileDel" title="' + fileTreeFile.deletions + ' deletion' + (fileTreeFile.deletions !== 1 ? 's' : '') + '">-' + fileTreeFile.deletions + '</span>)</span>' : '') +
-			(fileTreeFile.newFilePath === lastViewedFile ? '<span id="cdvLastFileViewed" title="Last File Viewed">' + SVG_ICONS.eyeOpen + '</span>' : '') +
-			'<span class="copyGitFile fileTreeFileAction" title="Copy Absolute File Path to Clipboard">' + SVG_ICONS.copy + '</span>' +
+			(fileTreeFile.type !== GG.GitFileStatus.Added && fileTreeFile.type !== GG.GitFileStatus.Untracked && fileTreeFile.type !== GG.GitFileStatus.Deleted && textFile ? '<span class="fileTreeFileAddDel">(<span class="fileTreeFileAdd" title="' + additionsTitle + '">+' + fileTreeFile.additions + '</span>|<span class="fileTreeFileDel" title="' + deletionsTitle + '">-' + fileTreeFile.deletions + '</span>)</span>' : '') +
+			(fileTreeFile.newFilePath === lastViewedFile ? '<span id="cdvLastFileViewed" title="' + webT('fileAction.lastFileViewed') + '">' + SVG_ICONS.eyeOpen + '</span>' : '') +
+			'<span class="copyGitFile fileTreeFileAction" title="' + webT('fileAction.copyAbsoluteFilePath') + '">' + SVG_ICONS.copy + '</span>' +
 			(fileTreeFile.type !== GG.GitFileStatus.Deleted
-				? (diffPossible && !isUncommitted ? '<span class="viewGitFileAtRevision fileTreeFileAction" title="View File at this Revision">' + SVG_ICONS.commit + '</span>' : '') +
-				'<span class="openGitFile fileTreeFileAction" title="Open File">' + SVG_ICONS.openFile + '</span>'
+				? (diffPossible && !isUncommitted ? '<span class="viewGitFileAtRevision fileTreeFileAction" title="' + webT('fileAction.viewFileAtRevision') + '">' + SVG_ICONS.commit + '</span>' : '') +
+				'<span class="openGitFile fileTreeFileAction" title="' + webT('fileAction.openFile') + '">' + SVG_ICONS.openFile + '</span>'
 				: ''
 			) + '</span></li>';
 	} else {
-		return '<li data-pathseg="' + encodedName + '"><span class="fileTreeRepo" data-path="' + encodeURIComponent(leaf.path) + '" title="Click to View Repository"><span class="fileTreeRepoIcon">' + SVG_ICONS.closedFolder + '</span>' + escapedName + '</span></li>';
+		return '<li data-pathseg="' + encodedName + '"><span class="fileTreeRepo" data-path="' + encodeURIComponent(leaf.path) + '" title="' + webT('fileAction.clickToViewRepository') + '"><span class="fileTreeRepoIcon">' + SVG_ICONS.closedFolder + '</span>' + escapedName + '</span></li>';
 	}
 }
 
