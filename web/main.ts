@@ -105,6 +105,33 @@ const webTranslations: { [lang: string]: { [key: string]: string } } = {
 		'context.commit.resetModeMixed': 'Mixed - Keep changes in your working tree, but reset the index.',
 		'context.commit.resetModeHard': 'Hard: Discards all working directory and staging area changes.',
 		'context.commit.resetYes': 'Yes, reset',
+		'dialog.addTag.title': 'Add tag to commit %s1:',
+		'dialog.addTag.name': 'Name',
+		'dialog.addTag.type': 'Type',
+		'dialog.addTag.typeAnnotated': 'Annotated',
+		'dialog.addTag.typeLightweight': 'Lightweight',
+		'dialog.addTag.message': 'Message',
+		'dialog.addTag.messagePlaceholder': 'Optional',
+		'dialog.addTag.messageInfo': 'A message can only be added to an annotated tag.',
+		'dialog.addTag.pushToRemote': 'Push to remote',
+		'dialog.addTag.dontPush': 'Don\'t push',
+		'dialog.addTag.pushToRemoteInfoSelect': 'Once this tag has been added, push it to this remote.',
+		'dialog.addTag.pushToRemoteInfoCheckbox': 'Once this tag has been added, push it to the repositories remote.',
+		'dialog.addTag.mostRecentTagsInfoSingular': 'The most recent tag in the loaded commits is %tags%.',
+		'dialog.addTag.mostRecentTagsInfoPlural': 'The most recent tags in the loaded commits are %tags%.',
+		'dialog.addTag.button': 'Add Tag',
+		'dialog.addTag.action': 'Adding Tag',
+		'dialog.addTag.tagExistsConfirm': 'A tag named %s1 already exists, do you want to replace it with this new tag?',
+		'dialog.addTag.replaceExisting': 'Yes, replace the existing tag',
+		'dialog.addTag.chooseAnotherName': 'No, choose another tag name',
+		'dialog.createBranch.title': 'Create branch at commit %s1:',
+		'dialog.createBranch.name': 'Name',
+		'dialog.createBranch.checkout': 'Check out',
+		'dialog.createBranch.button': 'Create Branch',
+		'dialog.createBranch.action': 'Creating Branch',
+		'dialog.createBranch.branchExistsConfirm': 'A branch named %s1 already exists, do you want to replace it with this new branch?',
+		'dialog.createBranch.replaceExisting': 'Yes, replace the existing branch',
+		'dialog.createBranch.chooseAnotherName': 'No, choose another branch name',
 		'commitDetails.loadingCommitDetails': 'Loading Commit Details ...',
 		'commitDetails.loadingUncommittedChanges': 'Loading Uncommitted Changes ...',
 		'commitDetails.loadingComparison': 'Loading Commit Comparison ...',
@@ -368,6 +395,33 @@ const webTranslations: { [lang: string]: { [key: string]: string } } = {
 		'context.commit.resetModeMixed': 'Mixed：保留工作区中的更改，但重置暂存区。',
 		'context.commit.resetModeHard': 'Hard：丢弃工作区和暂存区中的所有更改。',
 		'context.commit.resetYes': '是，重置',
+		'dialog.addTag.title': '为提交 %s1 添加标签：',
+		'dialog.addTag.name': '名称',
+		'dialog.addTag.type': '类型',
+		'dialog.addTag.typeAnnotated': '带注释的标签',
+		'dialog.addTag.typeLightweight': '轻量级标签',
+		'dialog.addTag.message': '消息',
+		'dialog.addTag.messagePlaceholder': '可选',
+		'dialog.addTag.messageInfo': '只有带注释的标签才能添加消息。',
+		'dialog.addTag.pushToRemote': '推送到远程',
+		'dialog.addTag.dontPush': '不推送',
+		'dialog.addTag.pushToRemoteInfoSelect': '添加此标签后，将其推送到此远程。',
+		'dialog.addTag.pushToRemoteInfoCheckbox': '添加此标签后，将其推送到仓库的远程。',
+		'dialog.addTag.mostRecentTagsInfoSingular': '已加载提交中最近的标签是 %tags%。',
+		'dialog.addTag.mostRecentTagsInfoPlural': '已加载提交中最近的标签是 %tags%。',
+		'dialog.addTag.button': '添加标签',
+		'dialog.addTag.action': '正在添加标签',
+		'dialog.addTag.tagExistsConfirm': '名为 %s1 的标签已存在，是否要用此新标签替换它？',
+		'dialog.addTag.replaceExisting': '是，替换现有标签',
+		'dialog.addTag.chooseAnotherName': '否，选择另一个标签名称',
+		'dialog.createBranch.title': '在提交 %s1 处创建分支：',
+		'dialog.createBranch.name': '名称',
+		'dialog.createBranch.checkout': '检出',
+		'dialog.createBranch.button': '创建分支',
+		'dialog.createBranch.action': '正在创建分支',
+		'dialog.createBranch.branchExistsConfirm': '名为 %s1 的分支已存在，是否要用此新分支替换它？',
+		'dialog.createBranch.replaceExisting': '是，替换现有分支',
+		'dialog.createBranch.chooseAnotherName': '否，选择另一个分支名称',
 		'commitDetails.loadingCommitDetails': '正在加载提交详情 ...',
 		'commitDetails.loadingUncommittedChanges': '正在加载未提交的更改 ...',
 		'commitDetails.loadingComparison': '正在加载提交对比 ...',
@@ -2125,26 +2179,33 @@ class GitGraphView {
 		}
 		const mostRecentTags = mostRecentTagsIndex > -1 ? this.commits[mostRecentTagsIndex].tags.map((tag) => '"' + tag.name + '"') : [];
 
+		let mostRecentTagsInfo: string | undefined = undefined;
+		if (mostRecentTags.length > 0) {
+			const tagsList = formatCommaSeparatedList(mostRecentTags);
+			const key = mostRecentTags.length > 1 ? 'dialog.addTag.mostRecentTagsInfoPlural' : 'dialog.addTag.mostRecentTagsInfoSingular';
+			mostRecentTagsInfo = webT(key).replace('%tags%', tagsList);
+		}
+
 		const inputs: DialogInput[] = [
-			{ type: DialogInputType.TextRef, name: 'Name', default: initialName, info: mostRecentTags.length > 0 ? 'The most recent tag' + (mostRecentTags.length > 1 ? 's' : '') + ' in the loaded commits ' + (mostRecentTags.length > 1 ? 'are' : 'is') + ' ' + formatCommaSeparatedList(mostRecentTags) + '.' : undefined },
-			{ type: DialogInputType.Select, name: 'Type', default: initialType === GG.TagType.Annotated ? 'annotated' : 'lightweight', options: [{ name: 'Annotated', value: 'annotated' }, { name: 'Lightweight', value: 'lightweight' }] },
-			{ type: DialogInputType.Text, name: 'Message', default: initialMessage, placeholder: 'Optional', info: 'A message can only be added to an annotated tag.' }
+			{ type: DialogInputType.TextRef, name: webT('dialog.addTag.name'), default: initialName, info: mostRecentTagsInfo },
+			{ type: DialogInputType.Select, name: webT('dialog.addTag.type'), default: initialType === GG.TagType.Annotated ? 'annotated' : 'lightweight', options: [{ name: webT('dialog.addTag.typeAnnotated'), value: 'annotated' }, { name: webT('dialog.addTag.typeLightweight'), value: 'lightweight' }] },
+			{ type: DialogInputType.Text, name: webT('dialog.addTag.message'), default: initialMessage, placeholder: webT('dialog.addTag.messagePlaceholder'), info: webT('dialog.addTag.messageInfo') }
 		];
 		if (this.gitRemotes.length > 1) {
-			const options = [{ name: 'Don\'t push', value: '-1' }];
+			const options = [{ name: webT('dialog.addTag.dontPush'), value: '-1' }];
 			this.gitRemotes.forEach((remote, i) => options.push({ name: remote, value: i.toString() }));
 			const defaultOption = initialPushToRemote !== null
 				? this.gitRemotes.indexOf(initialPushToRemote)
 				: isInitialLoad && this.config.dialogDefaults.addTag.pushToRemote
 					? this.gitRemotes.indexOf(this.getPushRemote())
 					: -1;
-			inputs.push({ type: DialogInputType.Select, name: 'Push to remote', options: options, default: defaultOption.toString(), info: 'Once this tag has been added, push it to this remote.' });
+			inputs.push({ type: DialogInputType.Select, name: webT('dialog.addTag.pushToRemote'), options: options, default: defaultOption.toString(), info: webT('dialog.addTag.pushToRemoteInfoSelect') });
 		} else if (this.gitRemotes.length === 1) {
 			const defaultValue = initialPushToRemote !== null || (isInitialLoad && this.config.dialogDefaults.addTag.pushToRemote);
-			inputs.push({ type: DialogInputType.Checkbox, name: 'Push to remote', value: defaultValue, info: 'Once this tag has been added, push it to the repositories remote.' });
+			inputs.push({ type: DialogInputType.Checkbox, name: webT('dialog.addTag.pushToRemote'), value: defaultValue, info: webT('dialog.addTag.pushToRemoteInfoCheckbox') });
 		}
 
-		dialog.showForm('Add tag to commit <b><i>' + abbrevCommit(hash) + '</i></b>:', inputs, 'Add Tag', (values) => {
+		dialog.showForm(webT('dialog.addTag.title', '<b><i>' + abbrevCommit(hash) + '</i></b>'), inputs, webT('dialog.addTag.button'), (values) => {
 			const tagName = <string>values[0];
 			const type = <string>values[1] === 'annotated' ? GG.TagType.Annotated : GG.TagType.Lightweight;
 			const message = <string>values[2];
@@ -2165,13 +2226,13 @@ class GitGraphView {
 					pushToRemote: pushToRemote,
 					pushSkipRemoteCheck: globalState.pushTagSkipRemoteCheck,
 					force: force
-				}, 'Adding Tag');
+				}, webT('dialog.addTag.action'));
 			};
 
 			if (this.gitTags.includes(tagName)) {
-				dialog.showTwoButtons('A tag named <b><i>' + escapeHtml(tagName) + '</i></b> already exists, do you want to replace it with this new tag?', 'Yes, replace the existing tag', () => {
+				dialog.showTwoButtons(webT('dialog.addTag.tagExistsConfirm', '<b><i>' + escapeHtml(tagName) + '</i></b>'), webT('dialog.addTag.replaceExisting'), () => {
 					runAddTagAction(true);
-				}, 'No, choose another tag name', () => {
+				}, webT('dialog.addTag.chooseAnotherName'), () => {
 					this.addTagAction(hash, tagName, type, message, pushToRemote, target, false);
 				}, target);
 			} else {
@@ -2213,19 +2274,19 @@ class GitGraphView {
 	}
 
 	private createBranchAction(hash: string, initialName: string, initialCheckOut: boolean, target: DialogTarget & CommitTarget) {
-		dialog.showForm('Create branch at commit <b><i>' + abbrevCommit(hash) + '</i></b>:', [
-			{ type: DialogInputType.TextRef, name: 'Name', default: initialName },
-			{ type: DialogInputType.Checkbox, name: 'Check out', value: initialCheckOut }
-		], 'Create Branch', (values) => {
+		dialog.showForm(webT('dialog.createBranch.title', '<b><i>' + abbrevCommit(hash) + '</i></b>'), [
+			{ type: DialogInputType.TextRef, name: webT('dialog.createBranch.name'), default: initialName },
+			{ type: DialogInputType.Checkbox, name: webT('dialog.createBranch.checkout'), value: initialCheckOut }
+		], webT('dialog.createBranch.button'), (values) => {
 			const branchName = <string>values[0], checkOut = <boolean>values[1];
 			if (this.gitBranches.includes(branchName)) {
-				dialog.showTwoButtons('A branch named <b><i>' + escapeHtml(branchName) + '</i></b> already exists, do you want to replace it with this new branch?', 'Yes, replace the existing branch', () => {
-					runAction({ command: 'createBranch', repo: this.currentRepo, branchName: branchName, commitHash: hash, checkout: checkOut, force: true }, 'Creating Branch');
-				}, 'No, choose another branch name', () => {
+				dialog.showTwoButtons(webT('dialog.createBranch.branchExistsConfirm', '<b><i>' + escapeHtml(branchName) + '</i></b>'), webT('dialog.createBranch.replaceExisting'), () => {
+					runAction({ command: 'createBranch', repo: this.currentRepo, branchName: branchName, commitHash: hash, checkout: checkOut, force: true }, webT('dialog.createBranch.action'));
+				}, webT('dialog.createBranch.chooseAnotherName'), () => {
 					this.createBranchAction(hash, branchName, checkOut, target);
 				}, target);
 			} else {
-				runAction({ command: 'createBranch', repo: this.currentRepo, branchName: branchName, commitHash: hash, checkout: checkOut, force: false }, 'Creating Branch');
+				runAction({ command: 'createBranch', repo: this.currentRepo, branchName: branchName, commitHash: hash, checkout: checkOut, force: false }, webT('dialog.createBranch.action'));
 			}
 		}, target);
 	}
